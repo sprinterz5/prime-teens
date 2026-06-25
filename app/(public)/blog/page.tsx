@@ -28,7 +28,7 @@ export default function BlogPage() {
                 <Link
                   key={track.slug}
                   href={`/blog/tag/${track.slug}`}
-                  className="focus-ring rounded-lg border border-white/12 px-3 py-2 text-sm text-muted transition hover:border-gold-400/70 hover:text-gold-300"
+                  className="focus-ring rounded-lg border border-white/[0.12] px-3 py-2 text-sm text-muted transition hover:border-gold-400/70 hover:text-gold-300"
                 >
                   {track.title}
                 </Link>

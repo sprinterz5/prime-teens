@@ -83,7 +83,7 @@ export default function HomePage() {
                 </Link>
                 <Link
                   href="#tracks"
-                  className="focus-ring inline-flex h-12 items-center justify-center gap-2 rounded-lg border border-white/16 px-5 font-semibold text-porcelain transition hover:border-gold-400/70 hover:text-gold-300"
+                  className="focus-ring inline-flex h-12 items-center justify-center gap-2 rounded-lg border border-white/[0.16] px-5 font-semibold text-porcelain transition hover:border-gold-400/70 hover:text-gold-300"
                 >
                   Подросткам
                   <ChevronRight size={18} aria-hidden="true" />

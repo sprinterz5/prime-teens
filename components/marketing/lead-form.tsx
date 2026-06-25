@@ -56,7 +56,7 @@ export function LeadForm() {
             type="email"
             required
             placeholder="Ваш email"
-            className="focus-ring h-12 w-full rounded-lg border border-white/12 bg-white/8 pl-12 pr-4 text-porcelain placeholder:text-muted"
+            className="focus-ring h-12 w-full rounded-lg border border-white/[0.12] bg-white/[0.08] pl-12 pr-4 text-porcelain placeholder:text-muted"
           />
         </div>
         <button
