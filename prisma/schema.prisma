@@ -1,0 +1,155 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  STUDENT
+  PARENT
+  MENTOR
+  SMM_WRITER
+  MODERATOR
+  ADMIN
+}
+
+enum UserStatus {
+  ACTIVE
+  INVITED
+  SUSPENDED
+}
+
+enum PostType {
+  ARTICLE
+  GUIDE
+  NEWS
+}
+
+enum PublishStatus {
+  DRAFT
+  REVIEW
+  PUBLISHED
+  ARCHIVED
+}
+
+enum PortfolioTrack {
+  OLYMPIAD
+  CLUB
+  VOLUNTEER
+  COMPETITION
+  RESEARCH
+  PROJECT
+}
+
+enum Visibility {
+  PUBLIC
+  LINK
+  PRIVATE
+}
+
+model User {
+  id           String        @id @default(cuid())
+  email        String        @unique
+  passwordHash String?
+  role         Role          @default(STUDENT)
+  status       UserStatus    @default(INVITED)
+  locale       String        @default("ru")
+  profile      Profile?
+  posts        Post[]        @relation("PostAuthor")
+  reviews      Post[]        @relation("PostReviewer")
+  leads        Lead[]
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  deletedAt    DateTime?
+}
+
+model Profile {
+  id          String   @id @default(cuid())
+  userId      String   @unique
+  displayName String
+  avatar      String?
+  bio         String?
+  city        String?
+  grade       String?
+  school      String?
+  interests   String[] @default([])
+  languages   String[] @default([])
+  socialLinks Json?
+  visibility  Visibility @default(PRIVATE)
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  deletedAt   DateTime?
+}
+
+model Post {
+  id          String        @id @default(cuid())
+  slug        String        @unique
+  type        PostType      @default(ARTICLE)
+  title       String
+  excerpt     String
+  contentRich Json
+  coverImage  String?
+  attachments String[]      @default([])
+  authorId    String?
+  reviewerId  String?
+  status      PublishStatus @default(DRAFT)
+  publishedAt DateTime?
+  tags        String[]      @default([])
+  track       PortfolioTrack?
+  locale      String        @default("ru")
+  seo         Json?
+  author      User?         @relation("PostAuthor", fields: [authorId], references: [id])
+  reviewer    User?         @relation("PostReviewer", fields: [reviewerId], references: [id])
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  deletedAt   DateTime?
+}
+
+model Lead {
+  id             String   @id @default(cuid())
+  email          String
+  role           String
+  source         String   @default("landing")
+  guideRequested String
+  locale         String   @default("ru")
+  consent        Boolean
+  userId         String?
+  user           User?    @relation(fields: [userId], references: [id])
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  deletedAt      DateTime?
+}
+
+model Portfolio {
+  id        String          @id @default(cuid())
+  studentId String
+  summary   String?
+  visibility Visibility     @default(PRIVATE)
+  items     PortfolioItem[]
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+  deletedAt DateTime?
+}
+
+model PortfolioItem {
+  id          String         @id @default(cuid())
+  portfolioId String
+  portfolio   Portfolio     @relation(fields: [portfolioId], references: [id], onDelete: Cascade)
+  track       PortfolioTrack
+  title       String
+  role        String
+  description String
+  metrics     Json?
+  evidence    String[]       @default([])
+  level       String?
+  status      String?
+  dateFrom    DateTime?
+  dateTo      DateTime?
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+  deletedAt   DateTime?
+}
