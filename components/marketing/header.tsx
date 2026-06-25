@@ -18,7 +18,7 @@ export function Header() {
           />
           <div className="leading-tight">
             <div className="font-display text-lg font-bold text-porcelain">PrimeTeens</div>
-            <div className="hidden text-xs text-muted sm:block">Портфолио для топ-вузов</div>
+            <div className="hidden text-xs text-muted sm:block">Траектория подростка</div>
           </div>
         </Link>
 
@@ -31,10 +31,10 @@ export function Header() {
         </nav>
 
         <Link
-          href="/#lead"
+          href="/#contact"
           className="focus-ring inline-flex h-11 items-center gap-2 rounded-lg bg-gold-500 px-4 text-sm font-semibold text-navy-950 transition hover:bg-gold-400"
         >
-          Забрать гайд
+          Обсудить
           <ArrowRight size={17} aria-hidden="true" />
         </Link>
       </div>

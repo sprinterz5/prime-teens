@@ -5,7 +5,12 @@ import { CheckCircle2, Loader2, Mail } from "lucide-react";
 
 type FormState = "idle" | "loading" | "success" | "error";
 
-export function LeadForm() {
+type LeadFormProps = {
+  buttonLabel?: string;
+  requestType?: string;
+};
+
+export function LeadForm({ buttonLabel = "Отправить", requestType = "consultation" }: LeadFormProps) {
   const [state, setState] = useState<FormState>("idle");
   const [message, setMessage] = useState("");
 
@@ -22,7 +27,7 @@ export function LeadForm() {
       body: JSON.stringify({
         email: data.get("email"),
         role: data.get("role"),
-        guideRequested: "strong-portfolio",
+        guideRequested: requestType,
         consent: data.get("consent") === "on",
         website: data.get("website") || ""
       }),
@@ -34,7 +39,7 @@ export function LeadForm() {
     if (response.ok && result.ok) {
       form.reset();
       setState("success");
-      setMessage(result.message ?? "Гайд отправим на email.");
+      setMessage(result.message ?? "Спасибо. Мы получили заявку.");
       return;
     }
 
@@ -65,7 +70,7 @@ export function LeadForm() {
           className="focus-ring inline-flex h-12 items-center justify-center gap-2 rounded-lg bg-gold-500 px-5 font-semibold text-navy-950 transition hover:bg-gold-400 disabled:cursor-not-allowed disabled:opacity-70"
         >
           {state === "loading" ? <Loader2 className="animate-spin" size={18} aria-hidden="true" /> : <CheckCircle2 size={18} aria-hidden="true" />}
-          Получить PDF
+          {buttonLabel}
         </button>
       </div>
 

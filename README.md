@@ -1,6 +1,6 @@
 # PrimeTeens
 
-Next.js MVP for the PrimeTeens public platform: landing page, blog seed content, lead form API, sitemap/RSS, and Prisma schema for the future platform.
+Next.js MVP for the PrimeTeens public platform: company landing page, services, guides, blog seed content, lead form API, sitemap/RSS, and Prisma schema for the future platform.
 
 ## Stack
 
@@ -28,6 +28,9 @@ pnpm build
 ## Current Routes
 
 - `/` - landing page
+- `/services` - services overview
+- `/guides` - guides library
+- `/about` - company/about page
 - `/blog` - blog index
 - `/blog/[slug]` - blog post
 - `/blog/tag/[tag]` - track filter
@@ -37,6 +40,7 @@ pnpm build
 
 ## Next Steps
 
+- Finalize service packages, prices, duration, and sales copy.
 - Connect `/api/leads` to Supabase/PostgreSQL and email delivery.
 - Replace local `lib/content.ts` posts with DB-backed content and a studio UI.
 - Add kk/en translations once Russian copy is approved.

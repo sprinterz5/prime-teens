@@ -22,6 +22,6 @@ export async function POST(request: Request) {
   // TODO: persist into Supabase/Postgres `Lead` and trigger an email with the requested guide.
   return NextResponse.json({
     ok: true,
-    message: "Спасибо. Мы приняли заявку и подготовим письмо с PDF-гайдом."
+    message: "Спасибо. Мы приняли заявку и свяжемся с вами."
   });
 }
