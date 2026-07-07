@@ -6,8 +6,8 @@ import { Section } from "@/components/marketing/section";
 import { guides } from "@/lib/content";
 
 export const metadata: Metadata = {
-  title: "Гайды",
-  description: "Библиотека гайдов PrimeTeens по проектам, олимпиадам, портфолио и подростковым траекториям."
+  title: "Ресурсы",
+  description: "Гайды и чек-листы PrimeTeens по документам, профориентации и подготовке к экзаменам."
 };
 
 export default function GuidesPage() {
@@ -17,12 +17,12 @@ export default function GuidesPage() {
       <main>
         <section className="border-b border-white/10 bg-navy-950">
           <div className="mx-auto w-full max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
-            <p className="mb-4 text-sm font-semibold text-gold-300">Гайды</p>
+            <p className="mb-4 text-sm font-semibold text-gold-300">Ресурсы</p>
             <h1 className="max-w-4xl font-display text-4xl font-extrabold leading-tight text-porcelain sm:text-6xl">
               Отдельная библиотека материалов, а не главный продукт PrimeTeens.
             </h1>
             <p className="mt-6 max-w-3xl text-lg leading-8 text-muted">
-              Гайды помогают быстро разобраться в теме. Для личной траектории, выбора услуг и сопровождения нужен контекст подростка и семьи.
+              Гайды помогают быстро разобраться в теме. Для реальной стратегии поступления нужен ассессмент и контекст конкретного студента.
             </p>
           </div>
         </section>
@@ -55,7 +55,7 @@ export default function GuidesPage() {
           title="Оставьте email, если нужен один из гайдов"
           subtitle="Позже здесь можно сделать нормальную библиотеку с отдельными страницами и PDF-файлами. Сейчас форма фиксирует интерес к материалам."
         >
-          <LeadForm buttonLabel="Запросить гайд" requestType="guide" />
+          <LeadForm buttonLabel="Запросить гайд" interest="guide" />
         </Section>
       </main>
     </>

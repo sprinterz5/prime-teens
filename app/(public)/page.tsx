@@ -3,13 +3,12 @@ import Link from "next/link";
 import {
   ArrowRight,
   BookOpen,
-  CalendarCheck,
-  CheckCircle2,
-  ClipboardList,
-  Compass,
-  FileText,
+  CalendarClock,
+  ClipboardCheck,
   GraduationCap,
   MessageCircle,
+  Route,
+  Signature,
   Sparkles,
   UsersRound
 } from "lucide-react";
@@ -22,20 +21,20 @@ import { siteConfig } from "@/config/site";
 
 const audiences = [
   {
-    title: "Подростку",
-    text: "Понять свои сильные стороны, попробовать проекты и собрать историю, которую не стыдно показать."
+    title: "Родителям",
+    text: "Видеть прогресс, сроки и договор в одном месте — без хаоса из десятка чатов и разрозненных советов."
   },
   {
-    title: "Родителям",
-    text: "Видеть план, сроки, логику решений и не превращать развитие ребенка в бесконечный список кружков."
+    title: "Студентам",
+    text: "Понятный план: какие вузы, какие документы, к какому сроку — и куратор, который держит темп."
   }
 ];
 
-const approach = [
-  [Compass, "Стратегия", "Сначала разбираемся, куда подросток хочет двигаться и какие шаги действительно имеют смысл."],
-  [ClipboardList, "План", "Собираем понятную дорожную карту: учеба, проекты, дедлайны, портфолио, коммуникация с семьей."],
-  [CalendarCheck, "Сопровождение", "Держим темп, помогаем с решениями и не даем хорошим идеям раствориться в занятости."],
-  [GraduationCap, "Упаковка", "Формулируем опыт подростка так, чтобы он звучал ясно, честно и убедительно."]
+const funnel = [
+  [Route, "Ассессмент", "Профориентационный тест и разбор профиля — реалистичный список направлений и стран."],
+  [ClipboardCheck, "Стратегия", "Собираем короткий список вузов, сроки подачи и бюджет — понятный план на сезон."],
+  [Signature, "Документы и договор", "Эссе, рекомендации, перевод документов и договор с фиксацией этапов и оплаты."],
+  [GraduationCap, "Куратор до зачисления", "Куратор ведёт коммуникацию с вузами и держит дедлайны до финального решения."]
 ];
 
 export default function HomePage() {
@@ -52,16 +51,16 @@ export default function HomePage() {
             <div>
               <p className="mb-6 inline-flex items-center gap-2 rounded-lg border border-gold-400/30 bg-gold-400/10 px-3 py-2 text-sm font-semibold text-gold-300">
                 <Sparkles size={16} aria-hidden="true" />
-                Не курсы. Персональная траектория для подростка.
+                Не курсы. Личное сопровождение поступления от куратора.
               </p>
               <h1 className="font-display text-5xl font-extrabold leading-none text-porcelain sm:text-6xl lg:text-7xl">
                 PrimeTeens
               </h1>
               <p className="mt-6 max-w-3xl text-2xl font-semibold leading-tight text-champagne sm:text-4xl">
-                Помогаем подросткам раскрыть потенциал и собрать сильную историю для будущего.
+                От профориентационного ассессмента до зачисления — в одном окне для студента и родителей.
               </p>
               <p className="mt-6 max-w-2xl text-lg leading-8 text-muted">
-                Работаем с подростками 13-17 лет и родителями: стратегия, полное сопровождение, проекты, портфолио, события и подготовка к важным образовательным решениям.
+                Сопровождаем школьников и студентов при поступлении в зарубежные и казахстанские вузы: стратегия, документы, эссе, договор и куратор, который держит сроки.
               </p>
               <div className="mt-8 flex flex-col gap-3 sm:flex-row">
                 <Link
@@ -75,7 +74,7 @@ export default function HomePage() {
                   href="#contact"
                   className="focus-ring inline-flex h-12 items-center justify-center gap-2 rounded-lg border border-white/[0.16] px-5 font-semibold text-porcelain transition hover:border-gold-400/70 hover:text-gold-300"
                 >
-                  Обсудить ситуацию
+                  Записаться на ассессмент
                   <MessageCircle size={18} aria-hidden="true" />
                 </Link>
               </div>
@@ -92,9 +91,9 @@ export default function HomePage() {
               />
               <div className="absolute bottom-0 left-0 right-0 grid gap-3">
                 {[
-                  ["01", "Личная стратегия", "понять цели и ближайшие шаги"],
-                  ["02", "Проекты и опыт", "сделать то, что можно показать"],
-                  ["03", "Портфолио", "упаковать факты в сильную историю"]
+                  ["01", "Ассессмент", "понять сильные стороны и направления"],
+                  ["02", "Стратегия и вузы", "собрать реалистичный список и сроки"],
+                  ["03", "Куратор до зачисления", "документы, договор, дедлайны"]
                 ].map(([step, title, text]) => (
                   <div key={step} className="glass rounded-lg p-5">
                     <div className="flex items-start gap-4">
@@ -112,53 +111,14 @@ export default function HomePage() {
         </section>
 
         <Section
-          id="services"
+          id="how"
           tone="light"
-          eyebrow="Услуги"
-          title="Не все услуги финально упакованы, но направление уже ясно"
-          subtitle="PrimeTeens строится не вокруг одного продукта. Мы помогаем семье понять ситуацию подростка и выбрать формат работы: от разовой консультации до полного сопровождения."
-        >
-          <div className="grid gap-4 lg:grid-cols-3">
-            {featuredServices.map((service) => (
-              <article key={service.slug} className="rounded-lg border border-navy-900/10 bg-white p-6 shadow-sm">
-                <p className="mb-3 text-sm font-semibold text-gold-500">{service.kicker}</p>
-                <h3 className="font-display text-2xl font-bold">{service.title}</h3>
-                <p className="mt-4 text-sm leading-6 text-navy-700">{service.description}</p>
-                <Link href={`/services#${service.slug}`} className="focus-ring mt-6 inline-flex items-center gap-2 rounded-lg text-sm font-semibold text-gold-500">
-                  Подробнее
-                  <ArrowRight size={16} aria-hidden="true" />
-                </Link>
-              </article>
-            ))}
-          </div>
-        </Section>
-
-        <Section
-          id="about"
-          eyebrow="О нас"
-          title="Мы помогаем подростку не потеряться между ожиданиями, возможностями и дедлайнами"
-          subtitle="У подростка часто есть интересы, энергия и потенциал, но нет структуры. У родителя есть тревога и желание помочь, но не всегда понятно, где поддержка, а где давление. PrimeTeens соединяет эти две стороны."
-        >
-          <div className="grid gap-4 md:grid-cols-2">
-            {audiences.map((item) => (
-              <article key={item.title} className="glass rounded-lg p-6">
-                <UsersRound className="mb-5 text-gold-300" size={28} aria-hidden="true" />
-                <h3 className="font-display text-2xl font-bold">{item.title}</h3>
-                <p className="mt-3 text-sm leading-6 text-muted">{item.text}</p>
-              </article>
-            ))}
-          </div>
-        </Section>
-
-        <Section
-          id="approach"
-          tone="light"
-          eyebrow="Подход"
-          title="Сначала смысл, потом активности"
-          subtitle="Мы не набрасываем подростку случайные кружки и конкурсы. Сначала собираем контекст, а потом выбираем действия, которые действительно усиливают его историю."
+          eyebrow="Как это работает"
+          title="Один путь: от ассессмента до зачисления"
+          subtitle="Каждый этап фиксируется — семья видит прогресс, а не догадывается, что происходит с заявкой."
         >
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-            {approach.map(([Icon, title, text]) => (
+            {funnel.map(([Icon, title, text]) => (
               <article key={String(title)} className="rounded-lg border border-navy-900/10 bg-white p-5 shadow-sm">
                 <Icon className="mb-5 text-gold-500" size={28} aria-hidden="true" />
                 <h3 className="font-display text-xl font-bold">{String(title)}</h3>
@@ -169,10 +129,49 @@ export default function HomePage() {
         </Section>
 
         <Section
+          id="services"
+          eyebrow="Услуги"
+          title="Ядро одно: студент не остаётся один на один с процессом поступления"
+          subtitle="PrimeTeens не привязан к одному продукту. Можно начать с ассессмента, а затем перейти на полное сопровождение — или сразу выбрать формат, который нужен семье."
+        >
+          <div className="grid gap-4 lg:grid-cols-3">
+            {featuredServices.map((service) => (
+              <article key={service.slug} className="glass rounded-lg p-6">
+                <p className="mb-3 text-sm font-semibold text-gold-300">{service.kicker}</p>
+                <h3 className="font-display text-2xl font-bold text-porcelain">{service.title}</h3>
+                <p className="mt-4 text-sm leading-6 text-muted">{service.description}</p>
+                <Link href={`/services#${service.slug}`} className="focus-ring mt-6 inline-flex items-center gap-2 rounded-lg text-sm font-semibold text-gold-300">
+                  Подробнее
+                  <ArrowRight size={16} aria-hidden="true" />
+                </Link>
+              </article>
+            ))}
+          </div>
+        </Section>
+
+        <Section
+          id="about"
+          tone="light"
+          eyebrow="О нас"
+          title="Соединяем ожидания родителей, сроки вузов и реальные возможности студента"
+          subtitle="У студента часто есть цель, но нет структуры. У родителя — тревога за сроки и деньги. PrimeTeens берёт на себя координацию между семьёй, куратором и вузами."
+        >
+          <div className="grid gap-4 md:grid-cols-2">
+            {audiences.map((item) => (
+              <article key={item.title} className="rounded-lg border border-navy-900/10 bg-white p-6 shadow-sm">
+                <UsersRound className="mb-5 text-gold-500" size={28} aria-hidden="true" />
+                <h3 className="font-display text-2xl font-bold">{item.title}</h3>
+                <p className="mt-3 text-sm leading-6 text-navy-700">{item.text}</p>
+              </article>
+            ))}
+          </div>
+        </Section>
+
+        <Section
           id="guides"
-          eyebrow="Гайды"
-          title="Гайды - это отдельная библиотека, а не смысл компании"
-          subtitle="Они помогают разобраться в отдельных темах и могут быть первым касанием с PrimeTeens. Основная работа начинается там, где нужен личный контекст."
+          eyebrow="Ресурсы"
+          title="Гайды и чек-листы — отдельная библиотека, а не главный продукт"
+          subtitle="Они помогают быстро разобраться в отдельных темах. Полноценная стратегия строится на ассессменте и работе с куратором."
         >
           <div className="grid gap-4 md:grid-cols-3">
             {featuredGuides.map((guide) => (
@@ -185,7 +184,7 @@ export default function HomePage() {
             ))}
           </div>
           <Link href="/guides" className="focus-ring mt-8 inline-flex items-center gap-2 rounded-lg text-sm font-semibold text-gold-300">
-            Все гайды
+            Все материалы
             <ArrowRight size={16} aria-hidden="true" />
           </Link>
         </Section>
@@ -194,8 +193,8 @@ export default function HomePage() {
           id="blog-preview"
           tone="light"
           eyebrow="Блог"
-          title="Блог - отдельно: мысли, разборы и практические материалы"
-          subtitle="Здесь можно читать про подростковое развитие, портфолио, проекты, образовательные решения и опыт PrimeTeens."
+          title="Блог - разборы, чек-листы и истории поступления"
+          subtitle="Про профориентацию, документы, экзамены, стипендии и то, как устроено сопровождение изнутри."
         >
           <div className="grid gap-4 md:grid-cols-3">
             {posts.map((post) => (
@@ -211,15 +210,15 @@ export default function HomePage() {
         <Section
           id="contact"
           eyebrow="Контакт"
-          title="Расскажите, что сейчас непонятно"
-          subtitle="Можно начать не с выбора услуги, а с разговора. Опишите ситуацию - мы подскажем, какой формат PrimeTeens подойдет лучше."
+          title="Запишитесь на профориентационный ассессмент"
+          subtitle="Можно начать не с выбора пакета услуг, а с разговора. Опишите ситуацию студента — мы предложим формат: ассессмент, консультацию или полное сопровождение."
         >
           <div className="grid gap-8 lg:grid-cols-[0.9fr_1.1fr] lg:items-start">
             <div className="glass rounded-lg p-6">
-              <CheckCircle2 className="mb-5 text-gold-300" size={32} aria-hidden="true" />
-              <h3 className="font-display text-2xl font-bold">Сайт будет расширяться вместе с продуктами</h3>
+              <CalendarClock className="mb-5 text-gold-300" size={32} aria-hidden="true" />
+              <h3 className="font-display text-2xl font-bold">Что происходит после заявки</h3>
               <p className="mt-4 text-sm leading-6 text-muted">
-                Сейчас мы разделили основные направления: услуги, гайды, блог и информацию о PrimeTeens. Детальные пакеты услуг можно спокойно доупаковать позже.
+                Менеджер свяжется в течение рабочего дня, уточнит ситуацию студента и предложит следующий шаг — ассессмент, бесплатную консультацию или сразу пакет полного сопровождения.
               </p>
             </div>
             <LeadForm />

@@ -19,7 +19,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: true, message: "Спасибо, заявка принята." });
   }
 
-  // TODO: persist into Supabase/Postgres `Lead` and trigger an email with the requested guide.
+  // TODO: persist into Postgres `Lead` (prisma) and hand off to the CRM (sales queue / assigned rep).
   return NextResponse.json({
     ok: true,
     message: "Спасибо. Мы приняли заявку и свяжемся с вами."

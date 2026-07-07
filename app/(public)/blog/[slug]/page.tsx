@@ -75,11 +75,11 @@ export default async function BlogPostPage({ params }: PageProps) {
 
           {track && (
             <aside className="glass mt-12 rounded-lg p-6">
-              <p className="text-sm font-semibold text-gold-300">Связанный трек</p>
+              <p className="text-sm font-semibold text-gold-300">Связанная категория</p>
               <h2 className="mt-2 font-display text-2xl font-bold text-porcelain">{track.title}</h2>
               <p className="mt-3 text-sm leading-6 text-muted">{track.detail}</p>
-              <Link href="/#lead" className="focus-ring mt-5 inline-flex rounded-lg text-sm font-semibold text-gold-300">
-                Получить гайд по портфолио
+              <Link href="/#contact" className="focus-ring mt-5 inline-flex rounded-lg text-sm font-semibold text-gold-300">
+                Записаться на ассессмент
               </Link>
             </aside>
           )}

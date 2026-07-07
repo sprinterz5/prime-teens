@@ -17,15 +17,15 @@ const manrope = Manrope({
 export const metadata: Metadata = {
   metadataBase: new URL("https://primeteens.kz"),
   title: {
-    default: "PrimeTeens - сильное портфолио для подростков",
+    default: "PrimeTeens - сопровождение поступления в вузы",
     template: "%s | PrimeTeens"
   },
   description:
-    "PrimeTeens помогает подросткам 13-17 лет в Казахстане собрать портфолио для поступления в топовые вузы мира.",
+    "PrimeTeens сопровождает школьников и студентов при поступлении в зарубежные и казахстанские вузы: ассессмент, стратегия, документы и куратор до зачисления.",
   openGraph: {
-    title: "PrimeTeens - покажи лучшее в себе",
+    title: "PrimeTeens - от ассессмента до зачисления",
     description:
-      "Гайды, события и менторское сопровождение для сильного подросткового портфолио.",
+      "Профориентационный ассессмент, документы, эссе и куратор, который ведёт студента и родителей до зачисления.",
     images: ["/prime-teens-logo.png"],
     locale: "ru_KZ",
     type: "website"

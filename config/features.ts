@@ -3,6 +3,6 @@ export const featureFlags = {
   publicBlog: true,
   auth: false,
   dashboard: false,
-  mentors: false,
+  curators: false,
   contentStudio: false
 };

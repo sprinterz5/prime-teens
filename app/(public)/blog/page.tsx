@@ -6,7 +6,7 @@ import { posts, tracks } from "@/lib/content";
 
 export const metadata: Metadata = {
   title: "Блог",
-  description: "Гайды PrimeTeens по олимпиадам, школьным клубам, хакатонам и портфолио."
+  description: "Разборы PrimeTeens по профориентации, документам, экзаменам и историям поступления."
 };
 
 export default function BlogPage() {
@@ -18,10 +18,10 @@ export default function BlogPage() {
           <div className="mx-auto w-full max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
             <p className="mb-4 text-sm font-semibold text-gold-300">Блог PrimeTeens</p>
             <h1 className="font-display text-4xl font-extrabold leading-tight text-porcelain sm:text-5xl">
-              Гайды и маршруты для сильного портфолио
+              Разборы и чек-листы для поступления
             </h1>
             <p className="mt-5 max-w-3xl text-base leading-7 text-muted">
-              Стартовая лента собрана из готовых материалов PrimeTeens. Категории совпадают с треками портфолио, чтобы блог работал вместе с продуктом.
+              Стартовая лента собрана из готовых материалов PrimeTeens. Категории совпадают с этапами сопровождения, чтобы блог работал вместе с продуктом.
             </p>
             <div className="mt-8 flex flex-wrap gap-2">
               {tracks.map((track) => (

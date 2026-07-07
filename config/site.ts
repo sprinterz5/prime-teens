@@ -1,8 +1,8 @@
 export const siteConfig = {
   name: "PrimeTeens",
-  slogan: "Помогаем подросткам показать лучшее в себе",
+  slogan: "Сопровождаем поступление в вузы Казахстана и мира",
   description:
-    "Команда для подростков 13-17 лет и родителей: личная стратегия, полное сопровождение, проекты, портфолио и подготовка к следующему шагу.",
+    "Профориентационный ассессмент, стратегия поступления, документы и куратор, который ведёт студента и родителей до зачисления.",
   contacts: {
     telegram: "https://t.me/primeteens",
     instagram: "https://instagram.com/primeteens",
@@ -10,7 +10,7 @@ export const siteConfig = {
   },
   nav: [
     { label: "Услуги", href: "/services" },
-    { label: "Гайды", href: "/guides" },
+    { label: "Ресурсы", href: "/guides" },
     { label: "Блог", href: "/blog" },
     { label: "О нас", href: "/about" }
   ]

@@ -19,7 +19,7 @@ export function GET() {
     <rss version="2.0">
       <channel>
         <title>PrimeTeens Blog</title>
-        <description>Гайды и маршруты для подросткового портфолио</description>
+        <description>Разборы и чек-листы по сопровождению поступления</description>
         <link>${siteUrl}/blog</link>
         ${items}
       </channel>
