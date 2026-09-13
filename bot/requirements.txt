@@ -1,0 +1,16 @@
+aiogram==3.31.0
+aiosqlite==0.22.1
+APScheduler==3.11.3
+PyYAML==6.0.3
+python-dotenv==1.2.3
+httpx==0.28.1
+Jinja2==3.1.6
+openpyxl==3.1.5
+
+# --- ASR (нужен при STT_PROVIDER=faster_whisper — это значение по умолчанию) ---
+# Тянет за собой ctranslate2 и av (PyAV), отдельный ffmpeg не нужен.
+# Колёса под Python 3.14 есть — проверено.
+faster-whisper==1.2.1
+
+# --- PDF (опционально, иначе характеристика отдаётся HTML-файлом) ---
+# weasyprint==63.1

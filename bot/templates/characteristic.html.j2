@@ -1,0 +1,257 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>PrimeTeens · Характеристика — {{ student.short_name or student.full_name }}</title>
+<style>
+  :root{
+    --ink:#14161a; --muted:#6b7280; --line:#e5e7eb; --soft:#f7f8fa;
+    --accent:#1f4fd8; --ok:#0f8a5f; --warm:#b45309;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0; padding:32px 28px 56px;
+    font:15px/1.55 "Inter","Segoe UI",system-ui,-apple-system,sans-serif;
+    color:var(--ink); background:#fff; max-width:900px; margin-inline:auto;
+  }
+  .eyebrow{font-size:11px; letter-spacing:.16em; text-transform:uppercase; color:var(--muted)}
+  h1{font-size:34px; line-height:1.1; margin:6px 0 4px; letter-spacing:-.02em}
+  .lead{color:var(--muted); font-size:13px; margin:0 0 20px}
+  .meta{
+    display:grid; grid-template-columns:repeat(4,1fr); gap:14px;
+    border-top:1px solid var(--line); border-bottom:1px solid var(--line);
+    padding:14px 0; margin-bottom:28px;
+  }
+  .meta div span{display:block; font-size:10px; letter-spacing:.12em;
+    text-transform:uppercase; color:var(--muted); margin-bottom:3px}
+  .meta div b{font-weight:600; font-size:13px}
+
+  section{margin:0 0 26px; page-break-inside:avoid}
+  h2{display:flex; align-items:baseline; gap:10px; font-size:17px; margin:0 0 10px;
+     letter-spacing:-.01em}
+  h2 i{font-style:normal; font-size:12px; font-weight:700; color:var(--accent);
+       font-variant-numeric:tabular-nums}
+
+  ul{margin:0; padding:0; list-style:none}
+  .checks li{position:relative; padding-left:20px; margin:5px 0; font-size:14px}
+  .checks li::before{content:"✓"; position:absolute; left:0; color:var(--ok); font-weight:700}
+  .arrows li{position:relative; padding-left:20px; margin:5px 0; font-size:14px}
+  .arrows li::before{content:"→"; position:absolute; left:0; color:var(--accent)}
+  .two-col{columns:2; column-gap:28px}
+  @media (max-width:640px){ .two-col{columns:1} .meta{grid-template-columns:1fr 1fr} }
+
+  .strength{display:flex; gap:12px; margin:12px 0}
+  .strength b.num{flex:0 0 24px; height:24px; border-radius:6px; background:var(--soft);
+    display:flex; align-items:center; justify-content:center; font-size:12px; color:var(--accent)}
+  .strength .t{font-weight:600; margin-bottom:2px}
+  .strength .d{color:var(--muted); font-size:13.5px}
+
+  .ba{display:grid; grid-template-columns:1fr 1fr; gap:0; border:1px solid var(--line);
+      border-radius:10px; overflow:hidden}
+  .ba > div{padding:14px 16px; font-size:13.5px}
+  .ba > div:first-child{background:var(--soft); border-right:1px solid var(--line)}
+  .ba span{display:block; font-size:10px; letter-spacing:.12em; text-transform:uppercase;
+           color:var(--muted); margin-bottom:5px}
+
+  .zone{border-left:3px solid var(--warm); padding:2px 0 2px 14px}
+  .zone .t{font-weight:600}
+  .zone .d{color:var(--muted); font-size:13.5px; margin:4px 0 8px}
+  .zone .step{font-size:13px}
+  .zone .step span{font-size:10px; letter-spacing:.12em; text-transform:uppercase;
+                   color:var(--warm); margin-right:6px}
+
+  table.facts{width:100%; border-collapse:collapse; font-size:13.5px}
+  table.facts td{padding:8px 0; border-bottom:1px solid var(--line); vertical-align:top}
+  table.facts td:first-child{width:34%; color:var(--muted)}
+
+  .goal{background:var(--soft); border-radius:10px; padding:16px 18px}
+  .goal span{display:block; font-size:10px; letter-spacing:.12em; text-transform:uppercase;
+             color:var(--muted); margin-bottom:6px}
+  .goal p{margin:0; font-size:15px; font-weight:500}
+
+  .roadmap{display:grid; grid-template-columns:1fr 1fr; gap:16px}
+  .rm{border:1px solid var(--line); border-radius:10px; padding:14px 16px}
+  .rm .p{font-size:10px; letter-spacing:.12em; text-transform:uppercase; color:var(--accent)}
+  .rm .t{font-weight:600; margin:4px 0 4px}
+  .rm .g{color:var(--muted); font-size:13px; margin-bottom:8px}
+  .rm ol{margin:0; padding-left:18px; font-size:13px}
+  .rm ol li{margin:4px 0}
+  @media (max-width:640px){ .roadmap{grid-template-columns:1fr} }
+
+  .parallel{display:flex; flex-wrap:wrap; gap:8px}
+  .parallel li{background:var(--soft); border-radius:999px; padding:6px 12px; font-size:12.5px}
+
+  .compare{width:100%; border-collapse:collapse; font-size:13px}
+  .compare th{text-align:left; font-size:10px; letter-spacing:.12em; text-transform:uppercase;
+              color:var(--muted); padding:0 0 8px; font-weight:600}
+  .compare td{padding:7px 12px 7px 0; border-top:1px solid var(--line); vertical-align:top}
+  .compare td:first-child{color:var(--muted); width:48%}
+
+  footer{margin-top:36px; padding-top:14px; border-top:1px solid var(--line);
+         font-size:11px; color:var(--muted)}
+  .draft{background:#fff7ed; border:1px solid #fed7aa; color:#9a3412; padding:12px 14px;
+         border-radius:8px; font-size:13px; margin-bottom:22px}
+  pre.notes{white-space:pre-wrap; background:var(--soft); padding:14px; border-radius:8px;
+            font-size:12px; line-height:1.5}
+  @media print{ body{padding:0 12px} @page{margin:14mm} }
+</style>
+</head>
+<body>
+
+<div class="eyebrow">PrimeTeens · характеристика по итогам курса</div>
+<h1>{{ student.full_name }}</h1>
+<p class="lead">Документ для родителей. Составлен по наблюдениям менторов за время курса.</p>
+
+<div class="meta">
+  <div><span>Класс / школа</span><b>{{ student.class_school or "—" }}</b></div>
+  <div><span>Курс</span><b>{{ course_name }}</b></div>
+  <div><span>Длительность</span><b>{{ duration }}</b></div>
+  <div><span>Ментор</span><b>{{ mentors or "—" }}</b></div>
+</div>
+
+{% if data.get("_error") or data.get("raw_notes") %}
+<div class="draft">
+  <b>Черновик.</b> Документ собран без языковой модели
+  {%- if data.get("_error") %} (ошибка: {{ data._error }}){% endif %}.
+  Разделы ниже нужно доредактировать вручную; сырые заметки — в конце документа.
+</div>
+{% endif %}
+
+<section>
+  <h2><i>01</i> Коротко о результате</h2>
+  <p>{{ data.summary }}</p>
+</section>
+
+{% if data.learned %}
+<section>
+  <h2><i>02</i> Что освоено на курсе</h2>
+  <ul class="checks two-col">
+    {% for item in data.learned %}<li>{{ item }}</li>{% endfor %}
+  </ul>
+</section>
+{% endif %}
+
+{% if data.strengths %}
+<section>
+  <h2><i>03</i> Сильные стороны</h2>
+  {% for s in data.strengths %}
+  <div class="strength">
+    <b class="num">{{ loop.index }}</b>
+    <div><div class="t">{{ s.title }}</div><div class="d">{{ s.detail }}</div></div>
+  </div>
+  {% endfor %}
+</section>
+{% endif %}
+
+{% if data.growth and (data.growth.before or data.growth.after) %}
+<section>
+  <h2><i>04</i> Заметный рост</h2>
+  <div class="ba">
+    <div><span>Было</span>{{ data.growth.before }}</div>
+    <div><span>Стало</span>{{ data.growth.after }}</div>
+  </div>
+</section>
+{% endif %}
+
+{% if data.growth_zone and data.growth_zone.title %}
+<section>
+  <h2><i>05</i> Зоны роста</h2>
+  <div class="zone">
+    <div class="t">{{ data.growth_zone.title }}</div>
+    <div class="d">{{ data.growth_zone.detail }}</div>
+    <div class="step"><span>Первый шаг</span>{{ data.growth_zone.first_step }}</div>
+  </div>
+</section>
+{% endif %}
+
+{% if data.done %}
+<section>
+  <h2><i>06</i> Что сделано за курс</h2>
+  <table class="facts">
+    {% if data.done.attendance %}<tr><td>Посещаемость</td><td>{{ data.done.attendance }}</td></tr>{% endif %}
+    {% if data.done.project %}<tr><td>Проект / кейс</td><td>{{ data.done.project }}</td></tr>{% endif %}
+    {% if data.done.defense %}<tr><td>Результат защиты</td><td>{{ data.done.defense }}</td></tr>{% endif %}
+    {% if data.done.portfolio %}<tr><td>Портфолио</td><td>{{ data.done.portfolio }}</td></tr>{% endif %}
+    {% if data.done.goals %}<tr><td>Цели на год</td><td>{{ data.done.goals }}</td></tr>{% endif %}
+  </table>
+</section>
+{% endif %}
+
+{% if data.portfolio and (data.portfolio.have or data.portfolio.todo) %}
+<section>
+  <h2><i>07</i> Портфолио сейчас</h2>
+  <div class="ba">
+    <div>
+      <span>Уже есть после курса</span>
+      <ul class="checks">{% for i in data.portfolio.have %}<li>{{ i }}</li>{% endfor %}</ul>
+    </div>
+    <div>
+      <span>Предстоит за 10 месяцев</span>
+      <ul class="arrows">{% for i in data.portfolio.todo %}<li>{{ i }}</li>{% endfor %}</ul>
+    </div>
+  </div>
+</section>
+{% endif %}
+
+{% if data.year_goal %}
+<section>
+  <h2><i>08</i> Программа на 10 месяцев — цель</h2>
+  <div class="goal"><span>Главная цель года</span><p>{{ data.year_goal }}</p></div>
+</section>
+{% endif %}
+
+{% if data.will_be_able %}
+<section>
+  <h2><i>09</i> Через 10 месяцев {{ student.short_name or student.full_name }} сможет</h2>
+  <ul class="checks two-col">{% for i in data.will_be_able %}<li>{{ i }}</li>{% endfor %}</ul>
+</section>
+{% endif %}
+
+{% if data.roadmap %}
+<section>
+  <h2><i>10</i> Дорожная карта · 10 месяцев</h2>
+  <div class="roadmap">
+    {% for r in data.roadmap %}
+    <div class="rm">
+      <div class="p">{{ r.period }}</div>
+      <div class="t">{{ r.title }}</div>
+      <div class="g">{{ r.goal }}</div>
+      <ol>{% for i in r["items"] %}<li>{{ i }}</li>{% endfor %}</ol>
+    </div>
+    {% endfor %}
+  </div>
+  {% if data.parallel %}
+  <p class="eyebrow" style="margin:18px 0 8px">Идёт параллельно все 10 месяцев</p>
+  <ul class="parallel">{% for i in data.parallel %}<li>{{ i }}</li>{% endfor %}</ul>
+  {% endif %}
+</section>
+{% endif %}
+
+<section>
+  <h2><i>11</i> Что меняет сопровождение</h2>
+  <table class="compare">
+    <tr><th>Без сопровождения</th><th>С годовой программой</th></tr>
+    <tr><td>Идеи быстро забываются</td><td>Проекты доводятся до результата</td></tr>
+    <tr><td>Активность зависит от настроения</td><td>Есть ритм: встреча в месяц, чек-ин в неделю</td></tr>
+    <tr><td>Достижения нигде не зафиксированы</td><td>Каждый шаг оставляет артефакт: диплом, страница, отчёт</td></tr>
+    <tr><td>Портфолио собирается в панике в выпускном классе</td><td>Собирается по ходу, с замерами четыре раза в год</td></tr>
+    <tr><td>Ребёнок один на один с выбором</td><td>Рядом ментор и команда сверстников</td></tr>
+    <tr><td>Английский учится «когда-нибудь»</td><td>Системная подготовка к IELTS внутри программы</td></tr>
+  </table>
+</section>
+
+{% if data.get("raw_notes") %}
+<section>
+  <h2><i>—</i> Сырые заметки менторов</h2>
+  <pre class="notes">{{ data.raw_notes }}</pre>
+</section>
+{% endif %}
+
+<footer>
+  Характеристика описывает проявления ученика в рамках учебного курса и не является
+  психологической или педагогической диагностикой.<br>
+  PrimeTeens · {{ generated_at }}
+</footer>
+
+</body>
+</html>

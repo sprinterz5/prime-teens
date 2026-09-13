@@ -1,0 +1,273 @@
+# ============================================================
+# Банк вопросов. Схема из ТЗ: опрос по исключениям, а не перебор списка.
+#
+# Ключевая идея: про большинство учеников не спрашиваем ничего. Ментор
+# отмечает только отклонения — кого не было, кто отличился, у кого не шло,
+# кто не сдал. «Про ученика ничего не отмечено» — это тоже данные, и они
+# стоили ноль нажатий. Плюс двое под «прожектором» по ротации.
+#
+# type:  choice          — одна кнопка из вариантов
+#        students_multi  — мультивыбор учеников одним экраном
+#        tags            — мультивыбор тегов (по конкретному ученику)
+#        text            — свободный ответ текстом ИЛИ голосовым
+#        scale10         — шкала 0..10 (только стартовый и финальный замер)
+#
+# expand: подвопросы, которые разворачиваются ПО КАЖДОМУ отмеченному ученику.
+#         Если никого не отметили — не задаются вовсе.
+#
+# ask_if: вопрос задаётся только если предыдущий ответ совпал со значением.
+# ============================================================
+
+# ---------- Теги. Менять после запуска дорого: по ним считаются сильные
+# ---------- стороны и зоны роста. Код тега уходит в БД, подпись — на кнопку.
+tags:
+  positive:
+    - {code: idea,     label: "💡 Своя идея"}
+    - {code: deeper,   label: "🔍 Копал глубже"}
+    - {code: helped,   label: "🤝 Помог команде"}
+    - {code: spoke,    label: "🎤 Говорил вслух"}
+    - {code: finished, label: "✅ Довёл до конца"}
+    - {code: data,     label: "📊 Принёс данные"}
+  negative:
+    - {code: distracted, label: "📵 Отвлекался"}
+    - {code: silent,     label: "😶 Молчал весь урок"}
+    - {code: lost,       label: "🌀 Не понял задание"}
+    - {code: dropped,    label: "⏸ Бросил на середине"}
+    - {code: solo,       label: "🙅 Не включился в команду"}
+    - {code: overtime,   label: "⏱ Не уложился в формат"}
+
+# ---------- Пять осей замера. Спрашиваются дважды за курс: на первом
+# ---------- занятии и после хакатона. Разница даёт блок «Было → Стало».
+axes:
+  - {code: public,     label: "Публичность",       question: "Насколько свободно говорит перед группой?"}
+  - {code: initiative, label: "Инициатива",        question: "Насколько сам предлагает, а не ждёт указаний?"}
+  - {code: finish,     label: "Доведение до конца", question: "Насколько доводит начатое до результата?"}
+  - {code: depth,      label: "Глубина",           question: "Насколько копает дальше очевидного ответа?"}
+  - {code: team,       label: "Командность",       question: "Насколько работает на команду, а не рядом с ней?"}
+
+# ============================================================
+# Быстрый опрос после урока
+# ============================================================
+lesson:
+  - key: pulse
+    type: choice
+    text: "Как прошло занятие в целом?"
+    options:
+      - {value: great, label: "🔥 Отлично"}
+      - {value: ok,    label: "👌 Ровно"}
+      - {value: hard,  label: "😐 Тяжело"}
+    maps_to: group_log
+
+  - key: pulse_why
+    type: text
+    voice: true
+    skippable: true
+    ask_if: {key: pulse, value: hard}
+    text: "Что именно не пошло?"
+    hint: "Это уйдёт в методичку, а не в характеристики учеников."
+    maps_to: method_log
+
+  - key: absent
+    type: students_multi
+    text: "Кого сегодня не было?"
+    hint: "Отметь всех. Никого — жми «Все на месте»."
+    empty_label: "✅ Все на месте"
+    maps_to: attendance
+
+  - key: standout
+    type: students_multi
+    text: "Кто сегодня отличился?"
+    hint: "Обычно 1–3 человека. Никто не выделился — это нормально."
+    empty_label: "Никто"
+    exclude: absent            # кого не было — того и в списке нет
+    maps_to: strengths
+    expand:
+      - key: standout_tags
+        type: tags
+        tag_set: positive
+        text: "{student} — чем именно?"
+        maps_to: strengths
+      - key: episode
+        type: text
+        voice: true
+        skippable: true
+        text: "{student} — что именно произошло? Одна строка."
+        hint: "Что СДЕЛАЛ, а не какой он. Попадёт в характеристику почти дословно.\nПлохо: «активный, молодец». Хорошо: «переспорил команду и отстоял свой вариант интерфейса»."
+        maps_to: episodes
+
+  - key: struggled
+    type: students_multi
+    text: "У кого сегодня не шло?"
+    hint: "Это не жалоба, а материал для блока «зоны роста»."
+    empty_label: "Все ок"
+    exclude: absent
+    maps_to: growth_zones
+    expand:
+      - key: struggled_tags
+        type: tags
+        tag_set: negative
+        text: "{student} — что именно не шло?"
+        maps_to: growth_zones
+
+  - key: spotlight_mode
+    type: choice
+    scope: spotlight          # задаётся по каждому ученику под прожектором
+    text: "🔦 {student} — как сегодня работал?"
+    hint: "Прожектор: подробно только про двоих за урок, по кругу."
+    options:
+      - {value: silent,   label: "Молчал"}
+      - {value: asked,    label: "Отвечал, когда спросили"}
+      - {value: proposed, label: "Сам предлагал"}
+      - {value: led,      label: "Вёл за собой"}
+    maps_to: dynamics
+
+  - key: spotlight_episode
+    type: text
+    scope: spotlight
+    voice: true
+    skippable: true
+    skip_label: "Нечего добавить"
+    text: "🔦 {student} — что делал конкретно?"
+    hint: "Один эпизод. Что сделал или сказал, а не каким показался."
+    maps_to: episodes
+
+  - key: homework
+    type: students_multi
+    text: "Кто не сдал задание?"
+    empty_label: "Все сдали"
+    exclude: absent
+    maps_to: attendance
+
+# ============================================================
+# Стартовый замер · день 1, один раз по каждому ученику
+# ============================================================
+baseline:
+  - key: interests
+    type: text
+    voice: true
+    skippable: true
+    text: "{student} — сферы интереса, со слов самого ученика."
+    maps_to: profile
+
+  - key: background
+    type: text
+    voice: true
+    skippable: true
+    skip_label: "Ничего значимого"
+    text: "{student} — что уже есть за плечами: олимпиады, клубы, проекты?"
+    maps_to: profile
+
+  - key: own_goal
+    type: text
+    voice: true
+    skippable: true
+    text: "{student} — чего он сам хочет от курса?"
+    maps_to: profile
+
+  # дальше автоматически подставляются пять осей (см. axes выше)
+  - key: axes
+    type: axes_block
+    text: "{student} — оцени по пяти осям."
+    hint: "Ставь честно и не бойся низких цифр. Смысл замера — показать рост через две недели. Если на старте у всех девятки, роста не будет видно."
+    maps_to: axes
+
+# ============================================================
+# Блок хакатона
+# ============================================================
+hackathon_team:
+  - key: team_place
+    type: choice
+    text: "Команда «{team}» — какое место?"
+    options:
+      - {value: "1", label: "1 место"}
+      - {value: "2", label: "2 место"}
+      - {value: "3", label: "3 место"}
+      - {value: "4", label: "4 место"}
+      - {value: part, label: "Участие"}
+    maps_to: project.result
+
+  - key: team_win
+    type: text
+    voice: true
+    skippable: true
+    text: "Команда «{team}» — что вытянуло команду? Одна строка."
+    maps_to: project
+
+  - key: team_gaps
+    type: tags
+    tag_set: rubric
+    text: "Команда «{team}» — чего не хватило по рубрике?"
+    maps_to: project
+
+hackathon_student:
+  - key: role
+    type: choice
+    text: "{student} — роль в команде?"
+    options:
+      - {value: captain,  label: "Капитан"}
+      - {value: research, label: "Исследование и данные"}
+      - {value: product,  label: "Продукт и макеты"}
+      - {value: economy,  label: "Экономика"}
+      - {value: design,   label: "Дизайн и подача"}
+      - {value: general,  label: "Общая работа"}
+    maps_to: project.role
+
+  - key: spoke
+    type: choice
+    text: "{student} — говорил на защите?"
+    options:
+      - {value: main,  label: "Основной спикер"}
+      - {value: part,  label: "Часть выступления"}
+      - {value: none,  label: "Не выступал"}
+    maps_to: project
+
+  - key: jury
+    type: choice
+    text: "{student} — отвечал на вопросы жюри?"
+    options:
+      - {value: sure,  label: "Да, уверенно"}
+      - {value: hard,  label: "Да, с трудом"}
+      - {value: none,  label: "Нет"}
+    maps_to: project
+
+  - key: hack_win
+    type: text
+    voice: true
+    skippable: true
+    text: "{student} — что получилось лично у него?"
+    maps_to: strengths
+
+  - key: hack_gap
+    type: text
+    voice: true
+    skippable: true
+    text: "{student} — что стоит подтянуть?"
+    maps_to: growth_zones
+
+# Рубрика хакатона — используется как набор тегов в team_gaps
+rubric:
+  - {code: problem,  label: "1 · Понимание проблемы"}
+  - {code: solution, label: "2 · Качество решения"}
+  - {code: proof,    label: "3 · Обоснованность"}
+  - {code: feasible, label: "4 · Реализуемость"}
+  - {code: pitch,    label: "5 · Подача и команда"}
+
+# ============================================================
+# Финальный замер · после хакатона, по каждому ученику
+# ============================================================
+final:
+  - key: axes
+    type: axes_block
+    show_previous: true       # бот покажет стартовую оценку по каждой оси
+    text: "{student} — финальный замер."
+    hint: "Бот показывает, что ты ставил на старте. Оценивай изменение, а не абсолют."
+    maps_to: axes
+
+  - key: last_episode
+    type: text
+    voice: true
+    skippable: true
+    ask_if_few_episodes: 2    # спросим только если эпизодов меньше двух
+    text: "{student} — один запомнившийся момент за курс."
+    hint: "По нему эпизодов почти нет — без этого в характеристике будет нечем наполнить сильные стороны."
+    maps_to: episodes

@@ -1,0 +1,274 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>PrimeTeens · материалы для характеристик — {{ group.name }}</title>
+<style>
+  :root{
+    --ink:#14161a; --muted:#6b7280; --line:#e5e7eb; --soft:#f7f8fa;
+    --accent:#1f4fd8; --ok:#0f8a5f; --warm:#b45309; --bad:#b91c1c;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0 auto; padding:32px 28px 64px; max-width:940px;
+    font:15px/1.55 "Inter","Segoe UI",system-ui,-apple-system,sans-serif;
+    color:var(--ink); background:#fff;
+  }
+  .eyebrow{font-size:11px; letter-spacing:.16em; text-transform:uppercase; color:var(--muted)}
+  h1{font-size:30px; margin:6px 0 4px; letter-spacing:-.02em}
+  .lead{color:var(--muted); font-size:13.5px; margin:0 0 8px}
+
+  .howto{background:var(--soft); border-radius:10px; padding:16px 18px; margin:20px 0 28px;
+         font-size:13.5px}
+  .howto > b{display:block; margin-bottom:6px}
+  .howto ul{margin:0; padding-left:18px} .howto li{margin:4px 0}
+
+  .toc{display:flex; flex-wrap:wrap; gap:8px; margin:0 0 32px}
+  .toc a{background:var(--soft); border-radius:999px; padding:6px 13px; font-size:13px;
+         text-decoration:none; color:var(--ink)}
+  .toc a:hover{background:#eef2ff; color:var(--accent)}
+
+  article{border-top:2px solid var(--ink); padding-top:18px; margin:0 0 46px;
+          page-break-before:always}
+  article:first-of-type{page-break-before:auto}
+  h2{font-size:23px; margin:0 0 2px; letter-spacing:-.01em}
+  .sub{color:var(--muted); font-size:13px; margin-bottom:16px}
+
+  .stats{display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin:0 0 22px}
+  .stat{border:1px solid var(--line); border-radius:9px; padding:10px 12px}
+  .stat span{display:block; font-size:10px; letter-spacing:.1em; text-transform:uppercase;
+             color:var(--muted); margin-bottom:4px}
+  .stat b{font-size:16px; font-weight:600}
+  .stat i{font-style:normal; font-size:12px; color:var(--muted); display:block; margin-top:2px}
+  @media (max-width:700px){ .stats{grid-template-columns:1fr 1fr} }
+
+  .spark{display:flex; gap:4px; align-items:flex-end; height:34px; margin-top:4px}
+  .spark div{flex:1; background:var(--accent); opacity:.75; border-radius:2px 2px 0 0;
+             min-height:3px; position:relative}
+  .spark div u{position:absolute; bottom:-15px; left:0; right:0; text-align:center;
+               font-size:9px; color:var(--muted); text-decoration:none}
+
+  h3{font-size:15px; margin:24px 0 3px}
+  .goes{font-size:11.5px; color:var(--accent); margin:0 0 8px}
+  ul.notes{margin:0; padding:0; list-style:none}
+  ul.notes li{position:relative; padding:6px 0 6px 16px; border-bottom:1px solid var(--line);
+              font-size:14px}
+  ul.notes li::before{content:"—"; position:absolute; left:0; color:var(--muted)}
+  ul.notes li em{font-style:normal; color:var(--muted); font-size:12px; margin-left:6px}
+
+  .daygroup{margin:14px 0}
+  .daygroup > b{font-size:13px; display:block; margin-bottom:2px}
+  .daygroup .q{font-size:11.5px; color:var(--muted); margin-top:6px}
+
+  table.axes{width:100%; border-collapse:collapse; font-size:13.5px; margin-top:4px}
+  table.axes th{text-align:left; font-size:10px; letter-spacing:.1em; text-transform:uppercase;
+                color:var(--muted); font-weight:600; padding:0 8px 6px 0}
+  table.axes td{padding:6px 8px 6px 0; border-top:1px solid var(--line)}
+  table.axes td:nth-child(2), table.axes td:nth-child(3),
+  table.axes td:nth-child(4){text-align:center; width:56px; font-variant-numeric:tabular-nums}
+  table.axes td.up{color:var(--ok); font-weight:600}
+  table.axes td.down{color:var(--bad); font-weight:600}
+  .bars{position:relative; height:16px; min-width:120px}
+  .bars u{position:absolute; left:0; height:5px; border-radius:3px;
+          background:var(--line); top:3px}
+  .bars u.after{background:var(--accent); top:9px}
+
+  .tagrow{display:flex; flex-wrap:wrap; gap:6px; margin-top:4px}
+  .tag{border-radius:999px; padding:4px 11px; font-size:12.5px}
+  .tag.pos{background:#e7f6ef; color:#0b6b4a}
+  .tag.neg{background:#fdecec; color:#9b2226}
+
+  .hintbox{background:var(--soft); border-left:3px solid var(--warm);
+           padding:10px 14px; border-radius:0 8px 8px 0; font-size:13.5px; margin:8px 0}
+  .hintbox.ok{border-left-color:var(--ok)}
+
+  .empty{background:#fff7ed; border:1px solid #fed7aa; color:#9a3412;
+         padding:12px 14px; border-radius:8px; font-size:13.5px}
+  .flag-no{color:var(--bad)} .flag-yes{color:var(--ok)}
+
+  section.group-log{border-top:2px solid var(--ink); padding-top:18px; page-break-before:always}
+  footer{margin-top:40px; padding-top:14px; border-top:1px solid var(--line);
+         font-size:11.5px; color:var(--muted)}
+  @media print{
+    body{padding:0 10px; max-width:none} @page{margin:14mm}
+    .toc{display:none}
+  }
+</style>
+</head>
+<body>
+
+<div class="eyebrow">PrimeTeens · материалы для характеристик</div>
+<h1>{{ group.name }}</h1>
+<p class="lead">Заметки менторов за курс, разложенные по разделам характеристики.
+Собрано {{ generated_at }} · учеников: {{ dossiers|length }}</p>
+
+<div class="howto">
+  <b>Как этим пользоваться</b>
+  <ul>
+    <li>Под каждым заголовком синим написано, <b>в какой раздел характеристики</b> он идёт.</li>
+    <li><b>Эпизоды</b> — главное. Это конкретные факты, которые нельзя вспомнить
+        через две недели. Без эпизода сильная сторона превращается в «молодец».</li>
+    <li><b>Было → стало</b> — те же пять осей на старте и после хакатона. Это и есть
+        доказательство роста для родителя, а не общие слова.</li>
+    <li><b>Зона роста — это отсутствие проявлений, а не низкий балл.</b> Ни разу не
+        отмечен «Говорил вслух» — публичная речь и есть зона роста. А нулевой прирост
+        при высоком старте — стабильная сила, не проблема. Не путать.</li>
+    <li>🎙 — ответ надиктован голосом и расшифрован, возможны огрехи распознавания.</li>
+  </ul>
+</div>
+
+<nav class="toc">
+  {% for d in dossiers %}
+  <a href="#s{{ d.student.id }}">{{ d.student.short_name }}</a>
+  {% endfor %}
+  {% if group_log %}<a href="#grouplog">По группе</a>{% endif %}
+</nav>
+
+{% for d in dossiers %}
+<article id="s{{ d.student.id }}">
+  <h2>{{ d.student.full_name }}</h2>
+  <p class="sub">
+    {{ d.student.class_school or "класс не указан" }}
+    {%- if d.student.team %} · команда {{ d.student.team }}{% endif %}
+  </p>
+
+  {% if d.counts.notes == 0 %}
+  <p class="empty">По этому ученику заметок нет — чек-листы за него не заполнялись.</p>
+  {% else %}
+  <div class="stats">
+    <div class="stat">
+      <span>Посещаемость</span>
+      <b>{{ d.attendance.present }} / {{ d.attendance.total }}</b>
+      {% if d.attendance.missed %}<i>пропуски: дни {{ d.attendance.missed|join(", ") }}</i>{% endif %}
+      {% if d.attendance.nohw %}<i>не сдал: дни {{ d.attendance.nohw|join(", ") }}</i>{% endif %}
+    </div>
+    <div class="stat">
+      <span>Эпизодов</span>
+      <b>{{ d.counts.episodes }}</b>
+      <i>{{ "хватает" if d.counts.episodes >= 2 else "мало" }}</i>
+    </div>
+    <div class="stat">
+      <span>Отличился</span>
+      <b>{{ d.marks.standout_days|length }}</b>
+      {% if d.marks.standout_days %}<i>дни {{ d.marks.standout_days|join(", ") }}</i>{% endif %}
+    </div>
+    <div class="stat">
+      <span>Не шло</span>
+      <b>{{ d.marks.struggled_days|length }}</b>
+      {% if d.marks.struggled_days %}<i>дни {{ d.marks.struggled_days|join(", ") }}</i>{% endif %}
+    </div>
+  </div>
+
+  {% if not d.counts.final_filled %}
+  <p class="empty">Финальный замер не сделан — не будет блока «Было → Стало».</p>
+  {% endif %}
+
+  {% if d.axes|selectattr("before", "ne", None)|list %}
+  <h3>Было → стало</h3>
+  <p class="goes">→ раздел 04 «Заметный рост»</p>
+  <table class="axes">
+    <tr><th>Ось</th><th>Старт</th><th>Финал</th><th>Δ</th><th></th></tr>
+    {% for a in d.axes %}{% if a.before is not none %}
+    <tr>
+      <td>{{ a.label }}</td>
+      <td>{{ a.before }}</td>
+      <td>{{ a.after if a.after is not none else "—" }}</td>
+      <td class="{{ 'up' if a.delta and a.delta > 0 else ('down' if a.delta and a.delta < 0 else '') }}">{{ "%+d"|format(a.delta) if a.delta is not none else "—" }}</td>
+      <td class="bars">
+        <u style="width:{{ (a.before * 10)|round|int }}%"></u>
+        {% if a.after is not none %}<u class="after" style="width:{{ (a.after * 10)|round|int }}%"></u>{% endif %}
+      </td>
+    </tr>
+    {% endif %}{% endfor %}
+  </table>
+  {% endif %}
+
+  <h3>Эпизоды · {{ d.counts.episodes }}</h3>
+  <p class="goes">→ конкретные примеры для разделов 01, 03, 04</p>
+  {% if d.episodes %}
+  <ul class="notes">
+    {% for e in d.episodes %}
+    <li>{{ e.text }}{% if e.source == "voice" %}<em>🎙</em>{% endif %}<em>{{ e.day_title }}</em></li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <p class="empty">Эпизодов нет — сильные стороны писать не из чего.</p>
+  {% endif %}
+
+  {% if d.tags.positive or d.tags.negative %}
+  <h3>Теги менторов</h3>
+  <p class="goes">→ три самых частых положительных = раздел 03</p>
+  <div class="tagrow">
+    {% for label, n in d.tags.positive %}<span class="tag pos">{{ label }} ×{{ n }}</span>{% endfor %}
+    {% for label, n in d.tags.negative %}<span class="tag neg">{{ label }} ×{{ n }}</span>{% endfor %}
+  </div>
+  {% endif %}
+
+  {% if d.insight.never_shown or d.insight.stable_strong %}
+  <h3>Подсказки для зон роста</h3>
+  <p class="goes">→ раздел 05 «Зоны роста»</p>
+  {% if d.insight.never_shown %}
+  <p class="hintbox"><b>Ни разу не отмечено за курс</b> — это и есть зоны роста, независимо от баллов:<br>{{ d.insight.never_shown|join(" · ") }}</p>
+  {% endif %}
+  {% if d.insight.stable_strong %}
+  <p class="hintbox ok"><b>Нулевой прирост при высоком старте</b> — стабильно сильная сторона, а не проблема: {{ d.insight.stable_strong|join(", ") }}</p>
+  {% endif %}
+  {% endif %}
+
+  {% for sec in d.sections %}
+  <h3>{{ sec.title }}</h3>
+  {% if sec.goes_to %}<p class="goes">→ {{ sec.goes_to }}</p>{% endif %}
+  <ul class="notes">
+    {% for it in sec["items"] %}
+    <li>{{ it.text }}
+      {% if it.source == "voice" %}<em>🎙</em>{% endif %}
+      {% if it.day %}<em>день {{ it.day }}</em>{% endif %}
+    </li>
+    {% endfor %}
+  </ul>
+  {% endfor %}
+
+  {% if d.by_day %}
+  <h3>Наблюдения по дням</h3>
+  <p class="goes">→ конкретные примеры для разделов 01, 03, 04</p>
+  {% for day in d.by_day %}
+  <div class="daygroup">
+    <b>{{ day.day_title }}</b>
+    <ul class="notes">
+      {% for it in day["items"] %}
+      <li>{{ it.text }}{% if it.source == "voice" %}<em>🎙</em>{% endif %}</li>
+      {% endfor %}
+    </ul>
+  </div>
+  {% endfor %}
+  {% endif %}
+
+  {% endif %}
+</article>
+{% endfor %}
+
+{% if group_log %}
+<section class="group-log" id="grouplog">
+  <h2>Контекст по группе</h2>
+  <p class="sub">Общие заметки с занятий — фон, который помогает вспомнить,
+    что вообще происходило в тот день.</p>
+  {% for day in group_log %}
+  <div class="daygroup">
+    <b>{{ day.day_title }}</b>
+    <ul class="notes">
+      {% for it in day["items"] %}
+      <li>{{ it.text }}<em>{{ it.question|truncate(60) }}</em></li>
+      {% endfor %}
+    </ul>
+  </div>
+  {% endfor %}
+</section>
+{% endif %}
+
+<footer>
+  PrimeTeens · материалы собраны ботом из чек-листов менторов.
+  Это рабочий документ для составления характеристик, не документ для родителей.
+</footer>
+
+</body>
+</html>
