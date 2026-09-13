@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Inter, Manrope } from "next/font/google";
+import { Inter, Unbounded } from "next/font/google";
 import "./globals.css";
 
 const inter = Inter({
@@ -8,9 +8,10 @@ const inter = Inter({
   display: "swap"
 });
 
-const manrope = Manrope({
+const unbounded = Unbounded({
   subsets: ["cyrillic", "latin"],
-  variable: "--font-manrope",
+  weight: ["500", "600", "700", "800"],
+  variable: "--font-display",
   display: "swap"
 });
 
@@ -21,11 +22,11 @@ export const metadata: Metadata = {
     template: "%s | PrimeTeens"
   },
   description:
-    "PrimeTeens сопровождает школьников и студентов при поступлении в зарубежные и казахстанские вузы: ассессмент, стратегия, документы и куратор до зачисления.",
+    "PrimeTeens ведёт школьников и студентов от профориентации до зачисления в зарубежные и казахстанские вузы: стратегия, документы и личный куратор на каждом шаге.",
   openGraph: {
-    title: "PrimeTeens - от ассессмента до зачисления",
+    title: "PrimeTeens - от профориентации до зачисления",
     description:
-      "Профориентационный ассессмент, документы, эссе и куратор, который ведёт студента и родителей до зачисления.",
+      "Профориентация, документы, эссе и куратор, который ведёт студента и родителей до самого зачисления.",
     images: ["/prime-teens-logo.png"],
     locale: "ru_KZ",
     type: "website"
@@ -35,7 +36,7 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="ru">
-      <body className={`${inter.variable} ${manrope.variable} font-sans antialiased`}>
+      <body className={`${inter.variable} ${unbounded.variable} font-sans antialiased`}>
         {children}
       </body>
     </html>

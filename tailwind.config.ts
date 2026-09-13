@@ -26,10 +26,11 @@ const config: Config = {
       },
       fontFamily: {
         sans: ["var(--font-inter)", "Inter", "Arial", "sans-serif"],
-        display: ["var(--font-manrope)", "Manrope", "Inter", "sans-serif"]
+        display: ["var(--font-display)", "Unbounded", "Inter", "sans-serif"]
       },
       boxShadow: {
-        glow: "0 24px 80px rgba(201, 162, 75, 0.16)"
+        glow: "0 24px 80px rgba(201, 162, 75, 0.16)",
+        "glow-sm": "0 12px 30px rgba(201, 162, 75, 0.28)"
       }
     }
   },

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { CircleCheck, LoaderCircle, User } from "lucide-react";
 
 type FormState = "idle" | "loading" | "success" | "error";
@@ -67,7 +68,7 @@ export function LeadForm({ buttonLabel = "Записаться", interest = "ass
         </div>
 
         <label className="sr-only" htmlFor="contact">
-          Телефон или email
+          Телефон или почта
         </label>
         <div className="grid gap-3 sm:grid-cols-[1fr_auto]">
           <input
@@ -75,13 +76,13 @@ export function LeadForm({ buttonLabel = "Записаться", interest = "ass
             name="contact"
             type="text"
             required
-            placeholder="Телефон или email"
+            placeholder="Телефон или почта"
             className="focus-ring h-12 w-full rounded-lg border border-white/[0.12] bg-white/[0.08] px-4 text-porcelain placeholder:text-muted"
           />
           <button
             type="submit"
             disabled={state === "loading"}
-            className="focus-ring inline-flex h-12 items-center justify-center gap-2 rounded-lg bg-gold-500 px-5 font-semibold text-navy-950 transition hover:bg-gold-400 disabled:cursor-not-allowed disabled:opacity-70"
+            className="btn btn-primary focus-ring disabled:cursor-not-allowed disabled:opacity-70"
           >
             {state === "loading" ? <LoaderCircle className="animate-spin" size={18} aria-hidden="true" /> : <CircleCheck size={18} aria-hidden="true" />}
             {buttonLabel}
@@ -100,10 +101,16 @@ export function LeadForm({ buttonLabel = "Записаться", interest = "ass
         </label>
       </div>
 
-      <label className="mt-4 flex gap-3 text-xs leading-5 text-muted">
-        <input type="checkbox" name="consent" required className="mt-1 accent-gold-500" />
-        Согласен на обработку персональных данных и понимаю, что для студентов младше 18 лет нужно согласие родителя.
-      </label>
+      <div className="mt-4 flex gap-3 text-xs leading-5 text-muted">
+        <input type="checkbox" id="consent" name="consent" required className="mt-1 accent-gold-500" />
+        <label htmlFor="consent">
+          Согласен на обработку{" "}
+          <Link href="/privacy" target="_blank" rel="noopener noreferrer" className="underline hover:text-gold-300">
+            персональных данных
+          </Link>{" "}
+          и понимаю, что для студентов младше 18 лет нужно согласие родителя.
+        </label>
+      </div>
       <input name="website" tabIndex={-1} autoComplete="off" className="hidden" aria-hidden="true" />
 
       {message && (

@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
+import { MobileNav } from "@/components/marketing/mobile-nav";
 import { siteConfig } from "@/config/site";
 
 export function Header() {
@@ -17,7 +18,7 @@ export function Header() {
             priority
           />
           <div className="leading-tight">
-            <div className="font-display text-lg font-bold text-porcelain">PrimeTeens</div>
+            <div className="font-display text-base font-semibold text-porcelain">PrimeTeens</div>
             <div className="hidden text-xs text-muted sm:block">Сопровождение поступления</div>
           </div>
         </Link>
@@ -30,13 +31,12 @@ export function Header() {
           ))}
         </nav>
 
-        <Link
-          href="/#contact"
-          className="focus-ring inline-flex h-11 items-center gap-2 rounded-lg bg-gold-500 px-4 text-sm font-semibold text-navy-950 transition hover:bg-gold-400"
-        >
+        <Link href="/#contact" className="btn btn-primary focus-ring hidden h-11 md:inline-flex">
           Записаться
           <ArrowRight size={17} aria-hidden="true" />
         </Link>
+
+        <MobileNav />
       </div>
     </header>
   );

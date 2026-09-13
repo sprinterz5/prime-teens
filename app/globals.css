@@ -10,6 +10,7 @@
   --navy-700: #16314f;
   --gold-500: #c9a24b;
   --gold-400: #d9b872;
+  --gold-300: #e8cf91;
   --champagne: #ede3c8;
   --white: #f7f8fa;
   --muted: #9fb0c3;
@@ -46,25 +47,157 @@ input {
   color: var(--white);
 }
 
-.gold-text {
-  background: linear-gradient(135deg, var(--gold-400), var(--champagne));
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-}
+@layer components {
+  .gold-text {
+    background: linear-gradient(135deg, var(--gold-400), var(--champagne));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
 
-.glass {
-  border: 1px solid rgba(237, 227, 200, 0.14);
-  background: linear-gradient(180deg, rgba(15, 35, 64, 0.78), rgba(10, 26, 47, 0.86));
-  box-shadow: 0 18px 60px rgba(0, 0, 0, 0.18);
-  backdrop-filter: blur(18px);
-}
+  .glass {
+    border: 1px solid rgba(237, 227, 200, 0.14);
+    background: linear-gradient(180deg, rgba(15, 35, 64, 0.78), rgba(10, 26, 47, 0.86));
+    box-shadow: 0 18px 60px rgba(0, 0, 0, 0.18);
+    backdrop-filter: blur(18px);
+  }
 
-.focus-ring {
-  outline: 2px solid transparent;
-  outline-offset: 3px;
-}
+  .focus-ring {
+    outline: 2px solid transparent;
+    outline-offset: 3px;
+  }
 
-.focus-ring:focus-visible {
-  outline-color: var(--gold-400);
+  .focus-ring:focus-visible {
+    outline-color: var(--gold-400);
+  }
+
+  /* Eyebrow label - echoes the tracked-out gold wordmark in the logo */
+  .eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.65rem;
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--gold-400);
+  }
+
+  .eyebrow::before {
+    content: "";
+    display: block;
+    height: 1px;
+    width: 1.5rem;
+    background: linear-gradient(90deg, var(--gold-500), transparent);
+  }
+
+  .eyebrow-on-light {
+    color: var(--gold-500);
+  }
+
+  .eyebrow-center {
+    justify-content: center;
+  }
+
+  .eyebrow-center::before {
+    background: linear-gradient(90deg, transparent, var(--gold-500));
+  }
+
+  .eyebrow-center::after {
+    content: "";
+    display: block;
+    height: 1px;
+    width: 1.5rem;
+    background: linear-gradient(90deg, var(--gold-500), transparent);
+  }
+
+  /* Subtle dot-grid texture for dark sections - adds depth without imagery */
+  .bg-grid {
+    background-image: radial-gradient(rgba(237, 227, 200, 0.09) 1px, transparent 1px);
+    background-size: 26px 26px;
+  }
+
+  /* Shared card lift interaction */
+  .card-hover {
+    transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+  }
+
+  .card-hover:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.25);
+  }
+
+  /* Icon badge used across service/guide/step cards */
+  .icon-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.75rem;
+    height: 2.75rem;
+    border-radius: 0.75rem;
+    background: linear-gradient(135deg, rgba(201, 162, 75, 0.2), rgba(217, 184, 114, 0.06));
+    border: 1px solid rgba(201, 162, 75, 0.28);
+    color: var(--gold-400);
+  }
+
+  .icon-badge-light {
+    background: linear-gradient(135deg, rgba(201, 162, 75, 0.14), rgba(201, 162, 75, 0.04));
+    border: 1px solid rgba(10, 26, 47, 0.1);
+    color: var(--gold-500);
+  }
+
+  /* Buttons */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    height: 3rem;
+    padding: 0 1.375rem;
+    border-radius: 0.6rem;
+    font-weight: 600;
+    font-size: 0.9rem;
+    transition: transform 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+  }
+
+  .btn:hover {
+    transform: translateY(-2px);
+  }
+
+  .btn-primary {
+    background: linear-gradient(135deg, var(--gold-400), var(--gold-500));
+    color: var(--navy-950);
+  }
+
+  .btn-primary:hover {
+    box-shadow: 0 16px 34px rgba(201, 162, 75, 0.32);
+  }
+
+  .btn-secondary {
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    color: var(--white);
+  }
+
+  .btn-secondary:hover {
+    border-color: rgba(217, 184, 114, 0.7);
+    color: var(--gold-300);
+  }
+
+  /* FAQ accordion - native <details>, no JS required */
+  .faq-item summary {
+    cursor: pointer;
+    list-style: none;
+  }
+
+  .faq-item summary::-webkit-details-marker {
+    display: none;
+  }
+
+  .faq-item .faq-chevron {
+    transition: transform 0.2s ease;
+  }
+
+  .faq-item[open] .faq-chevron {
+    transform: rotate(180deg);
+  }
 }

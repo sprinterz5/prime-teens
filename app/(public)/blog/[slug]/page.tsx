@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, CalendarDays, Clock3 } from "lucide-react";
+import { Footer } from "@/components/marketing/footer";
 import { Header } from "@/components/marketing/header";
 import { getPost, posts, tracks } from "@/lib/content";
 
@@ -64,7 +65,7 @@ export default async function BlogPostPage({ params }: PageProps) {
             </span>
           </div>
 
-          <h1 className="font-display text-4xl font-extrabold leading-tight text-porcelain sm:text-5xl">{post.title}</h1>
+          <h1 className="font-display text-3xl font-bold leading-tight text-porcelain sm:text-4xl">{post.title}</h1>
           <p className="mt-5 text-lg leading-8 text-muted">{post.excerpt}</p>
 
           <div className="mt-10 space-y-6 text-base leading-8 text-champagne">
@@ -75,15 +76,16 @@ export default async function BlogPostPage({ params }: PageProps) {
 
           {track && (
             <aside className="glass mt-12 rounded-lg p-6">
-              <p className="text-sm font-semibold text-gold-300">Связанная категория</p>
-              <h2 className="mt-2 font-display text-2xl font-bold text-porcelain">{track.title}</h2>
+              <p className="eyebrow">Связанная категория</p>
+              <h2 className="mt-3 font-display text-xl font-semibold text-porcelain">{track.title}</h2>
               <p className="mt-3 text-sm leading-6 text-muted">{track.detail}</p>
               <Link href="/#contact" className="focus-ring mt-5 inline-flex rounded-lg text-sm font-semibold text-gold-300">
-                Записаться на ассессмент
+                Записаться на профориентацию
               </Link>
             </aside>
           )}
         </article>
+        <Footer />
       </main>
     </>
   );

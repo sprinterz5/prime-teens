@@ -1,5 +1,5 @@
 import type { MetadataRoute } from "next";
-import { posts, tracks } from "@/lib/content";
+import { guides, posts, tracks } from "@/lib/content";
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const base = "https://primeteens.kz";
@@ -11,6 +11,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { url: `${base}/guides`, lastModified: now },
     { url: `${base}/about`, lastModified: now },
     { url: `${base}/blog`, lastModified: now },
+    { url: `${base}/privacy`, lastModified: now },
     ...posts.map((post) => ({
       url: `${base}/blog/${post.slug}`,
       lastModified: new Date(post.publishedAt)
@@ -18,6 +19,12 @@ export default function sitemap(): MetadataRoute.Sitemap {
     ...tracks.map((track) => ({
       url: `${base}/blog/tag/${track.slug}`,
       lastModified: now
-    }))
+    })),
+    ...guides
+      .filter((guide) => guide.status === "available")
+      .map((guide) => ({
+        url: `${base}${guide.file}`,
+        lastModified: now
+      }))
   ];
 }

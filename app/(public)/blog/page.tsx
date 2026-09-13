@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Header } from "@/components/marketing/header";
 import { PostCard } from "@/components/blog/post-card";
+import { Footer } from "@/components/marketing/footer";
+import { Header } from "@/components/marketing/header";
 import { posts, tracks } from "@/lib/content";
 
 export const metadata: Metadata = {
@@ -16,12 +17,12 @@ export default function BlogPage() {
       <main>
         <section className="border-b border-white/10 bg-navy-950">
           <div className="mx-auto w-full max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
-            <p className="mb-4 text-sm font-semibold text-gold-300">Блог PrimeTeens</p>
-            <h1 className="font-display text-4xl font-extrabold leading-tight text-porcelain sm:text-5xl">
+            <p className="eyebrow mb-4">Блог PrimeTeens</p>
+            <h1 className="font-display text-4xl font-bold leading-tight text-porcelain sm:text-5xl">
               Разборы и чек-листы для поступления
             </h1>
             <p className="mt-5 max-w-3xl text-base leading-7 text-muted">
-              Стартовая лента собрана из готовых материалов PrimeTeens. Категории совпадают с этапами сопровождения, чтобы блог работал вместе с продуктом.
+              Разбираем профориентацию, документы, экзамены и то, как устроено сопровождение изнутри — на реальных вопросах студентов и родителей.
             </p>
             <div className="mt-8 flex flex-wrap gap-2">
               {tracks.map((track) => (
@@ -42,6 +43,7 @@ export default function BlogPage() {
             <PostCard key={post.slug} post={post} />
           ))}
         </section>
+        <Footer />
       </main>
     </>
   );

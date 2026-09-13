@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowRight, CircleCheck } from "lucide-react";
+import { Footer } from "@/components/marketing/footer";
 import { Header } from "@/components/marketing/header";
 import { LeadForm } from "@/components/marketing/lead-form";
 import { Section } from "@/components/marketing/section";
@@ -8,7 +9,7 @@ import { services } from "@/lib/content";
 
 export const metadata: Metadata = {
   title: "Услуги",
-  description: "Услуги PrimeTeens: профориентационный ассессмент, полное сопровождение поступления, документы и эссе, координация подготовки к экзаменам."
+  description: "Услуги PrimeTeens: профориентация, полное сопровождение поступления, документы и эссе, координация подготовки к экзаменам."
 };
 
 export default function ServicesPage() {
@@ -18,12 +19,12 @@ export default function ServicesPage() {
       <main>
         <section className="border-b border-white/10 bg-navy-950">
           <div className="mx-auto w-full max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
-            <p className="mb-4 text-sm font-semibold text-gold-300">Услуги PrimeTeens</p>
-            <h1 className="max-w-4xl font-display text-4xl font-extrabold leading-tight text-porcelain sm:text-6xl">
-              Можно начать с ассессмента, а можно сразу с полного сопровождения поступления.
+            <p className="eyebrow mb-4">Услуги PrimeTeens</p>
+            <h1 className="max-w-4xl font-display text-4xl font-bold leading-tight text-porcelain sm:text-6xl">
+              Берём поступление на себя — от профориентации до подписанного зачисления.
             </h1>
             <p className="mt-6 max-w-3xl text-lg leading-8 text-muted">
-              Мы не привязываем сайт к одному пакету. Формат работы подбирается под ситуацию студента: от разовой консультации до полного цикла с куратором и договором.
+              Формат работы подбирается под ситуацию студента: от разовой консультации до полного цикла с куратором и договором.
             </p>
           </div>
         </section>
@@ -31,11 +32,11 @@ export default function ServicesPage() {
         <Section tone="light" title="Основные направления">
           <div className="grid gap-5">
             {services.map((service) => (
-              <article id={service.slug} key={service.slug} className="rounded-lg border border-navy-900/10 bg-white p-6 shadow-sm">
+              <article id={service.slug} key={service.slug} className="card-hover rounded-lg border border-navy-900/10 bg-white p-6 shadow-sm">
                 <div className="grid gap-6 lg:grid-cols-[0.8fr_1.2fr]">
                   <div>
-                    <p className="mb-3 text-sm font-semibold text-gold-500">{service.kicker}</p>
-                    <h2 className="font-display text-3xl font-bold text-navy-900">{service.title}</h2>
+                    <p className="eyebrow eyebrow-on-light mb-3">{service.kicker}</p>
+                    <h2 className="font-display text-2xl font-semibold text-navy-900">{service.title}</h2>
                     <p className="mt-4 text-base leading-7 text-navy-700">{service.description}</p>
                     <p className="mt-5 text-sm font-semibold text-navy-900">{service.bestFor}</p>
                   </div>
@@ -57,13 +58,13 @@ export default function ServicesPage() {
           id="contact"
           eyebrow="Следующий шаг"
           title="Если пока не понятно, какой формат нужен - это нормально"
-          subtitle="Можно начать с описания ситуации студента. Мы поймём, нужен ли семье ассессмент, консультация или сразу полное сопровождение."
+          subtitle="Можно начать с описания ситуации студента. Мы поймём, нужна ли семье профориентация, консультация или сразу полное сопровождение."
         >
           <div className="grid gap-8 lg:grid-cols-[0.9fr_1.1fr] lg:items-start">
             <div className="glass rounded-lg p-6">
-              <h2 className="font-display text-2xl font-bold">Точные условия фиксируются в договоре</h2>
+              <h2 className="font-display text-xl font-semibold">Точные условия фиксируются в договоре</h2>
               <p className="mt-4 text-sm leading-6 text-muted">
-                Цены, длительность и этапы работы по каждой услуге закрепляются в договоре после первого разговора и, при необходимости, ассессмента.
+                Цены, длительность и этапы работы по каждой услуге закрепляются в договоре после первого разговора и, при необходимости, профориентации.
               </p>
               <Link href="/about" className="focus-ring mt-6 inline-flex items-center gap-2 rounded-lg text-sm font-semibold text-gold-300">
                 Узнать о PrimeTeens
@@ -73,6 +74,7 @@ export default function ServicesPage() {
             <LeadForm buttonLabel="Отправить заявку" interest="services" />
           </div>
         </Section>
+        <Footer />
       </main>
     </>
   );
