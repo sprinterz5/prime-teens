@@ -195,7 +195,9 @@ input.wl, input.wl.s, input.wl.d{ width:100%; display:block; background:transpar
   font-family:'Inter',sans-serif; font-size:9.6pt; color:#123; outline:none; }
 input.wl{ height:9mm; } input.wl.s{ height:7.5mm; } input.wl.d{ border-bottom-style:dashed; }
 input.wl:focus, input.wlbl-in:focus, input.td-in:focus{ background:#FFF8E8; }
-.wlbl{ gap:2mm; } .wlbl-in{ flex:1 1 auto; background:transparent; border:0; outline:none;
+/* width:0 + min-width:0: without them an <input> keeps its intrinsic ~20ch width,
+   which widens narrow grid columns (e.g. the cover's "Моя команда") past the page edge */
+.wlbl{ gap:2mm; } .wlbl-in{ flex:1 1 auto; width:0; min-width:0; background:transparent; border:0; outline:none;
   font-family:'Inter',sans-serif; font-size:9.6pt; color:#123; padding-bottom:1mm; }
 input.td-in{ width:100%; background:transparent; border:0; outline:none; min-height:8mm;
   font-family:'Inter',sans-serif; font-size:9.4pt; color:#123; }
@@ -306,7 +308,26 @@ label.ck input:disabled + .ck-box{ opacity:.85; cursor:default; }
   100%{ box-shadow:0 0 0 3px rgba(201,162,75,0); }
 }
 .wb-flash{ animation: wbFlash 1.4s ease-out; border-radius:3px; }
-</style></head><body><div class="topbar"><span class="brand">PrimeTeens · Рабочая тетрадь</span><select id="nav"><option value="1">В начало</option><option value="2">ДЕНЬ 1</option><option value="6">ДЕНЬ 2</option><option value="11">ДЕНЬ 3</option><option value="15">ДЕНЬ 4</option><option value="17">ДЕНЬ 5</option><option value="21">ДЕНЬ 6</option><option value="24">ДЕНЬ 7</option><option value="29">ДНИ 8–9</option></select><span class="spacer"></span><span class="counter">1 / 32</span><span class="saved">сохранено</span><span class="netstatus">нет связи, повторяем…</span><button id="btn-print" type="button">Печать</button></div><div class='stage'><section class="page cover nofoot" id="page-1" data-page="1"><div class="body">
+
+/* компактная шапка: всегда одна строка, тетрадь получает максимум экрана */
+.topbar{ flex-wrap:nowrap !important; gap:10px; padding:6px 12px; min-height:44px; }
+.topbar .brand{ font-size:13px; white-space:nowrap; }
+.topbar select{ flex:0 1 auto; min-width:0; max-width:340px; text-overflow:ellipsis; }
+.topbar .counter{ white-space:nowrap; }
+/* статусы висят ярлычком под шапкой и не занимают в ней место */
+.topbar .saved, .topbar .netstatus{ position:absolute; right:12px; top:100%; white-space:nowrap;
+  font-size:11px; padding:2px 8px; border-radius:0 0 6px 6px; background:#12324F;
+  pointer-events:none; }
+.stage{ padding:14px 8px 40px; gap:14px; }
+
+@media (max-width:767px){
+  .topbar{ gap:8px; padding:6px 8px; min-height:48px; }
+  .topbar .brand, .topbar .spacer{ display:none; }
+  .topbar select{ flex:1 1 auto; max-width:none; min-height:36px; font-size:14px; padding:6px 10px; }
+  .stage{ padding:6px 4px 32px; gap:8px; }
+  .page{ padding:12px !important; border-radius:8px; }
+}
+</style></head><body><div class="topbar"><span class="brand">PrimeTeens · Тетрадь</span><select id="nav"><option value="1">В начало</option><option value="2">ДЕНЬ 1</option><option value="6">ДЕНЬ 2</option><option value="11">ДЕНЬ 3</option><option value="15">ДЕНЬ 4</option><option value="17">ДЕНЬ 5</option><option value="21">ДЕНЬ 6</option><option value="24">ДЕНЬ 7</option><option value="29">ДНИ 8–9</option></select><span class="spacer"></span><span class="counter">1 / 32</span><span class="saved">сохранено</span><span class="netstatus">нет связи, повторяем…</span></div><div class='stage'><section class="page cover nofoot" id="page-1" data-page="1"><div class="body">
 <div class="grid-ov"></div>
 <div style="position:relative;display:flex;flex-direction:column;height:100%;">
   <div style="display:flex;justify-content:space-between;align-items:flex-start;">
@@ -1832,43 +1853,86 @@ function wbSetupCanvas(cv, opts){
     });
   });
 
-  fetch(API + '/' + studentId + '/entries', {credentials:'same-origin'})
-    .then(function(r){ return r.ok ? r.json() : null; })
-    .then(function(data){
-      if(!data) return;
-      var entries = data.entries || {};
-      document.querySelectorAll('[data-f]').forEach(function(el){
-        var k = el.getAttribute('data-f');
-        if(!(k in entries)) return;
-        if(el.tagName === 'INPUT' && el.type === 'checkbox'){ el.checked = !!entries[k]; }
-        else if(el.tagName === 'INPUT'){ el.value = entries[k] || ''; }
-        else if(el.tagName === 'TEXTAREA'){ el.value = entries[k] || ''; autosize(el); }
-      });
-    })
-    .catch(function(){ setNet(false); });
+  // Readonly (mentor) view: apply one value, highlighting it only if it changed.
+  function applyValue(el, v, flash){
+    var before = (el.type === 'checkbox') ? el.checked : el.value;
+    if(el.tagName === 'INPUT' && el.type === 'checkbox'){ el.checked = !!v; }
+    else if(el.tagName === 'INPUT'){ el.value = v || ''; }
+    else if(el.tagName === 'TEXTAREA'){ el.value = v || ''; autosize(el); }
+    var after = (el.type === 'checkbox') ? el.checked : el.value;
+    if(flash && before !== after) highlight(el.closest('.wl, .wlbl, .wlta, td, label.ck') || el);
+  }
+
+  // fieldId -> updatedAt of the drawing as last shown; a newer value from a poll
+  // means the student drew something, so the canvas reloads its image.
+  var drawingSeen = {};
+
+  function reloadDrawing(fieldId, stamp, flash){
+    var handle = canvasHandles[fieldId];
+    if(!handle) return;
+    handle.setBaseSrc(API + '/' + studentId + '/drawings/' + encodeURIComponent(fieldId) + '?t=' + encodeURIComponent(stamp || Date.now()));
+    var cv = document.querySelector('canvas[data-f="' + fieldId + '"]');
+    if(flash && cv) highlight(cv.parentElement);
+  }
+
+  function loadEntries(flash){
+    return fetch(API + '/' + studentId + '/entries', {credentials:'same-origin', cache:'no-store'})
+      .then(function(r){ return r.ok ? r.json() : null; })
+      .then(function(data){
+        if(!data) return;
+        var drawings = data.drawings || {};
+        Object.keys(drawings).forEach(function(k){
+          if(drawingSeen[k] === drawings[k]) return;
+          var firstLoad = !(k in drawingSeen) && !flash;
+          drawingSeen[k] = drawings[k];
+          if(!firstLoad && readonly) reloadDrawing(k, drawings[k], flash);
+        });
+        var entries = data.entries || {};
+        document.querySelectorAll('[data-f]').forEach(function(el){
+          var k = el.getAttribute('data-f');
+          if(el.tagName === 'CANVAS') return;
+          if(!(k in entries)){ if(flash) applyValue(el, el.type === 'checkbox' ? false : '', true); return; }
+          applyValue(el, entries[k], flash);
+        });
+        if(readonly) setNet(true);
+      })
+      .catch(function(){ setNet(false); });
+  }
+
+  loadEntries(false);
+
+  if(readonly){
+    // Live updates come over SSE. Some proxies (e.g. a Cloudflare quick tunnel
+    // used for Telegram Mini App testing) buffer the stream so nothing arrives;
+    // the server sends "hello"/"ping" events every 10 s, and if none has been
+    // seen for 15 s we poll the entries every 3 s instead. Every (re)connect
+    // also refetches, so events missed during a reconnect aren't lost.
+    var lastLive = 0;
+    var markLive = function(){ lastLive = Date.now(); };
+    setInterval(function(){
+      if(Date.now() - lastLive > 15000) loadEntries(true);
+    }, 3000);
+  }
 
   if(readonly && window.EventSource){
     var es = new EventSource(API + '/' + studentId + '/stream');
+    es.addEventListener('hello', function(){ markLive(); loadEntries(true); });
+    es.addEventListener('ping', markLive);
     es.addEventListener('entry', function(e){
+      markLive();
       try {
         var msg = JSON.parse(e.data);
         var el = document.querySelector('[data-f="' + msg.fieldId + '"]');
         if(!el) return;
-        if(el.tagName === 'INPUT' && el.type === 'checkbox'){ el.checked = !!msg.value; }
-        else if(el.tagName === 'INPUT'){ el.value = msg.value || ''; }
-        else if(el.tagName === 'TEXTAREA'){ el.value = msg.value || ''; autosize(el); }
-        highlight(el.closest('.wl, .wlbl, .wlta, td, label.ck') || el);
+        applyValue(el, msg.value, true);
       } catch(err){}
     });
     es.addEventListener('drawing', function(e){
+      markLive();
       try {
         var msg = JSON.parse(e.data);
-        var handle = canvasHandles[msg.fieldId];
-        if(!handle) return;
-        var url = API + '/' + studentId + '/drawings/' + encodeURIComponent(msg.fieldId) + '?t=' + Date.now();
-        handle.setBaseSrc(url);
-        var cv = document.querySelector('canvas[data-f="' + msg.fieldId + '"]');
-        if(cv) highlight(cv.parentElement);
+        if(msg.updatedAt) drawingSeen[msg.fieldId] = msg.updatedAt;
+        reloadDrawing(msg.fieldId, msg.updatedAt, true);
       } catch(err){}
     });
     es.onerror = function(){ setNet(false); };
@@ -1883,8 +1947,10 @@ function wbSetupCanvas(cv, opts){
     }
     var stageEl = document.querySelector('.stage');
     if(!stageEl) return;
-    var avail = Math.min(stageEl.clientWidth - 16, 1000);
-    var s = Math.min(1, avail / MM);
+    // Fill the available width: a laptop/desktop gets a larger A4 page with
+    // proportionally larger text instead of a 794px column in empty space.
+    var avail = stageEl.clientWidth - 16;
+    var s = Math.min(1.6, avail / MM);
     document.querySelectorAll('.page').forEach(function(p){ p.style.zoom = s; });
   }
   scale();

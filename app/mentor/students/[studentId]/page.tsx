@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth/session";
 import { canReadStudent } from "@/lib/auth/authorize";
 import { AppHeader } from "@/components/app/app-header";
+import { TelegramViewport } from "@/components/app/telegram-viewport";
 
 export const dynamic = "force-dynamic";
 
@@ -37,7 +38,8 @@ export default async function MentorStudentWorkbookPage({
   if (!student) notFound();
 
   return (
-    <div className="flex h-screen flex-col bg-navy-950">
+    <div className="flex h-[100dvh] flex-col bg-navy-950">
+      <TelegramViewport />
       <AppHeader
         title={`${student.fullName} · ${student.group.name}`}
         backHref="/mentor"

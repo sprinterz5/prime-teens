@@ -18,7 +18,10 @@ export async function GET(_request: Request, { params }: { params: Promise<{ stu
 
   if (!(await canReadStudent(session, studentId))) return forbidden();
 
-  const rows = await prisma.workbookEntry.findMany({ where: { studentId } });
+  const [rows, drawingRows] = await Promise.all([
+    prisma.workbookEntry.findMany({ where: { studentId } }),
+    prisma.workbookDrawing.findMany({ where: { studentId }, select: { fieldId: true, updatedAt: true } })
+  ]);
 
   const entries: Record<string, unknown> = {};
   const updatedAt: Record<string, string> = {};
@@ -27,5 +30,11 @@ export async function GET(_request: Request, { params }: { params: Promise<{ stu
     updatedAt[row.fieldId] = row.updatedAt.toISOString();
   }
 
-  return NextResponse.json({ version: manifest.version, entries, updatedAt });
+  // Drawing fieldId -> last change, so a polling client can tell which canvases to reload.
+  const drawings: Record<string, string> = {};
+  for (const row of drawingRows) {
+    drawings[row.fieldId] = row.updatedAt.toISOString();
+  }
+
+  return NextResponse.json({ version: manifest.version, entries, updatedAt, drawings });
 }

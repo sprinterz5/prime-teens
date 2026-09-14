@@ -195,7 +195,9 @@ input.wl, input.wl.s, input.wl.d{ width:100%; display:block; background:transpar
   font-family:'Inter',sans-serif; font-size:9.6pt; color:#123; outline:none; }
 input.wl{ height:9mm; } input.wl.s{ height:7.5mm; } input.wl.d{ border-bottom-style:dashed; }
 input.wl:focus, input.wlbl-in:focus, input.td-in:focus{ background:#FFF8E8; }
-.wlbl{ gap:2mm; } .wlbl-in{ flex:1 1 auto; background:transparent; border:0; outline:none;
+/* width:0 + min-width:0: without them an <input> keeps its intrinsic ~20ch width,
+   which widens narrow grid columns (e.g. the cover's "Моя команда") past the page edge */
+.wlbl{ gap:2mm; } .wlbl-in{ flex:1 1 auto; width:0; min-width:0; background:transparent; border:0; outline:none;
   font-family:'Inter',sans-serif; font-size:9.6pt; color:#123; padding-bottom:1mm; }
 input.td-in{ width:100%; background:transparent; border:0; outline:none; min-height:8mm;
   font-family:'Inter',sans-serif; font-size:9.4pt; color:#123; }

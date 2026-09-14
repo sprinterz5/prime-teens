@@ -5,7 +5,9 @@ import { subscribeGroup, type WorkbookNotification } from "@/lib/realtime";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const HEARTBEAT_MS = 25_000;
+// Named "hello"/"ping" events (not SSE comments) so the client can tell a live
+// stream from one a proxy is silently buffering, and fall back to polling.
+const HEARTBEAT_MS = 10_000;
 
 function sseFrame(event: string, data: unknown): string {
   return `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`;
@@ -32,10 +34,10 @@ export async function GET(request: Request, { params }: { params: Promise<{ grou
         controller.enqueue(encoder.encode(sseFrame(msg.kind, msg)));
       };
       unsubscribe = await subscribeGroup(groupId, onMessage);
-      controller.enqueue(encoder.encode(": connected\n\n"));
+      controller.enqueue(encoder.encode(sseFrame("hello", { groupId })));
       heartbeat = setInterval(() => {
         try {
-          controller.enqueue(encoder.encode(": heartbeat\n\n"));
+          controller.enqueue(encoder.encode(sseFrame("ping", { t: Date.now() })));
         } catch {
           // controller already closed
         }

@@ -8,17 +8,17 @@ import Link from "next/link";
  */
 export function AppHeader({ title, backHref, backLabel }: { title: string; backHref?: string; backLabel?: string }) {
   return (
-    <header className="flex h-14 shrink-0 items-center gap-3 border-b border-white/10 bg-navy-950 px-4 text-white">
+    <header className="flex h-10 shrink-0 items-center gap-2 border-b border-white/10 bg-navy-950 px-3 text-white">
       <Image
         src="/prime-teens-logo.png"
         alt="PrimeTeens"
-        width={28}
-        height={28}
-        className="h-7 w-7 rounded object-cover"
+        width={22}
+        height={22}
+        className="h-[22px] w-[22px] shrink-0 rounded object-cover"
       />
-      <span className="font-display text-sm font-semibold text-porcelain">{title}</span>
+      <span className="min-w-0 truncate font-display text-xs font-semibold text-porcelain sm:text-sm">{title}</span>
       {backHref && (
-        <Link href={backHref} className="ml-auto text-sm text-muted underline hover:text-champagne">
+        <Link href={backHref} className="ml-auto shrink-0 whitespace-nowrap text-xs text-muted underline hover:text-champagne sm:text-sm">
           {backLabel ?? "Назад"}
         </Link>
       )}

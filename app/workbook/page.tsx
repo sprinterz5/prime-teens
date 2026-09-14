@@ -1,4 +1,5 @@
 import { getSession } from "@/lib/auth/session";
+import { TelegramViewport } from "@/components/app/telegram-viewport";
 import { TelegramAutoLogin } from "./telegram-auto-login";
 
 export const dynamic = "force-dynamic";
@@ -28,7 +29,8 @@ export default async function WorkbookPage() {
   }
 
   return (
-    <div className="flex h-screen flex-col bg-navy-950">
+    <div className="flex h-[100dvh] flex-col bg-navy-950">
+      <TelegramViewport />
       <TelegramAutoLogin />
       <iframe src="/workbook/frame" title="Рабочая тетрадь" className="h-full w-full border-0" />
     </div>

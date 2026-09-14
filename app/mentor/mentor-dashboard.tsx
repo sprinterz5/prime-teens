@@ -77,11 +77,31 @@ export function MentorDashboard() {
       if (refetchTimer.current) clearTimeout(refetchTimer.current);
       refetchTimer.current = setTimeout(() => loadProgress(groupId), 300);
     };
-    es.addEventListener("entry", onUpdate);
-    es.addEventListener("drawing", onUpdate);
+    // If a proxy buffers the stream (no hello/ping for 15 s), poll instead.
+    let lastLive = 0;
+    const markLive = () => {
+      lastLive = Date.now();
+    };
+    es.addEventListener("hello", () => {
+      markLive();
+      onUpdate(); // catch up on anything missed while (re)connecting
+    });
+    es.addEventListener("ping", markLive);
+    es.addEventListener("entry", () => {
+      markLive();
+      onUpdate();
+    });
+    es.addEventListener("drawing", () => {
+      markLive();
+      onUpdate();
+    });
+    const poll = setInterval(() => {
+      if (Date.now() - lastLive > 15_000) loadProgress(groupId);
+    }, 5_000);
 
     return () => {
       es.close();
+      clearInterval(poll);
       if (refetchTimer.current) clearTimeout(refetchTimer.current);
     };
   }, [groupId, loadProgress]);
