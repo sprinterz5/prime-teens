@@ -16,12 +16,21 @@ LOGO = f"data:image/png;base64,{B['logo']}"
 
 
 def macros(s):
+    # Начиная с версии со стабильными id полей (см. build_web.py), в
+    # исходниках parts/*.html у {{L n}}/{{LS n}}/{{LD n}} и {{K подпись}}
+    # появился необязательный суффикс "|id=..." — устойчивый id поля для
+    # веб-версии и манифеста. Печатной версии он не нужен (тут нет полей
+    # ввода), поэтому просто отбрасываем его при разборе макроса.
+    # "|ta" — ещё один необязательный суффикс (см. build_web.py): в вебе
+    # такая группа строк становится одним растущим textarea вместо
+    # отдельных полей на каждую строку. В печати разницы нет — как и
+    # раньше, рисуем n разлинованных строк.
     def rep(m):
         kind, n = m.group(1), int(m.group(2))
         cls = {'L': 'wl', 'LS': 'wl s', 'LD': 'wl d'}[kind]
         return ''.join(f'<div class="{cls}"></div>' for _ in range(n))
-    s = re.sub(r'\{\{(L|LS|LD)\s+(\d+)\}\}', rep, s)
-    s = re.sub(r'\{\{K\s+(.*?)\}\}',
+    s = re.sub(r'\{\{(L|LS|LD)\s+(\d+)(?:\|id=[^|}]*)?(?:\|ta)?\}\}', rep, s)
+    s = re.sub(r'\{\{K\s+(.*?)(?:\|id=[^}]*)?\}\}',
                lambda m: f'<div class="wlbl"><span class="k">{m.group(1)}</span></div>', s)
     return s.replace('{{LOGO}}', LOGO)
 

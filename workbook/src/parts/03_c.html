@@ -44,7 +44,7 @@
 
 <div class="card mt5">
   <div class="label">ЧТО Я СОБРАЛ И ГДЕ ЭТО ОТКРЫВАЕТСЯ</div>
-  <div class="mt3">{{L 2}}</div>
+  <div class="mt3">{{L 2|id=d5-vibecoding-result|ta}}</div>
 </div>
 
 <!--PAGE class="cheat" hl="ШПАРГАЛКА" hr="ХАКАТОН"-->
@@ -82,10 +82,10 @@
 
     <div class="h3 mt5">Регламент · запиши, когда объявят</div>
     <div class="grid2" style="gap:3mm;">
-      <div>{{K ЗАЩИТА, МИН}}</div>
-      <div>{{K ВОПРОСЫ, МИН}}</div>
-      <div>{{K СДАЧА ФАЙЛА}}</div>
-      <div>{{K РАЗМЕР КОМАНДЫ}}</div>
+      <div>{{K ЗАЩИТА, МИН|id=d5-hackathon-defense-minutes}}</div>
+      <div>{{K ВОПРОСЫ, МИН|id=d5-hackathon-questions-minutes}}</div>
+      <div>{{K СДАЧА ФАЙЛА|id=d5-hackathon-file-deadline}}</div>
+      <div>{{K РАЗМЕР КОМАНДЫ|id=d5-hackathon-team-size}}</div>
     </div>
   </div>
 </div>
@@ -120,16 +120,16 @@
 
 <table class="tall mt4">
   <tr><th style="width:52mm;">Олимпиада</th><th style="width:34mm;">Организатор</th><th>Проверил ли я это сам</th></tr>
-  <tr><td class="mid"></td><td class="mid"></td><td></td></tr>
-  <tr><td class="mid"></td><td class="mid"></td><td></td></tr>
-  <tr><td class="mid"></td><td class="mid"></td><td></td></tr>
+  <tr><td class="mid" data-id="d6-olympiad-name-1"></td><td class="mid" data-id="d6-olympiad-org-1"></td><td data-id="d6-olympiad-verified-1"></td></tr>
+  <tr><td class="mid" data-id="d6-olympiad-name-2"></td><td class="mid" data-id="d6-olympiad-org-2"></td><td data-id="d6-olympiad-verified-2"></td></tr>
+  <tr><td class="mid" data-id="d6-olympiad-name-3"></td><td class="mid" data-id="d6-olympiad-org-3"></td><td data-id="d6-olympiad-verified-3"></td></tr>
 </table>
 
 <div class="tiny mt3">Один прогон не считается — если первый ответ ИИ звучит гладко, попроси второй вариант и сравни.</div>
 
 <div class="card mt5">
   <div class="label">КАКУЮ ИЗ НИХ Я РЕАЛЬНО ПОПРОБУЮ В ЭТОМ ЦИКЛЕ</div>
-  <div class="mt3">{{L 2}}</div>
+  <div class="mt3">{{L 2|id=d6-olympiad-choice|ta}}</div>
 </div>
 
 <!--PAGE class="" hl="НЕДЕЛЯ 2 · БЛОК 2" hr="ДЕНЬ 6"-->
@@ -138,9 +138,9 @@
 
 <table class="tall2">
   <tr><th style="width:44mm;">Страна / город</th><th>Что нашёл — программа, лагерь, курс</th></tr>
-  <tr><td class="mid"></td><td></td></tr>
-  <tr><td class="mid"></td><td></td></tr>
-  <tr><td class="mid"></td><td></td></tr>
+  <tr><td class="mid" data-id="d6-summer-country-1"></td><td data-id="d6-summer-program-1"></td></tr>
+  <tr><td class="mid" data-id="d6-summer-country-2"></td><td data-id="d6-summer-program-2"></td></tr>
+  <tr><td class="mid" data-id="d6-summer-country-3"></td><td data-id="d6-summer-program-3"></td></tr>
 </table>
 
 <div class="note mt5">
@@ -151,15 +151,15 @@
 <div class="task mt6"><span class="n">3</span><span class="tt">Чего мне не хватает</span><span class="hint">честно, без самобичевания</span></div>
 <div class="card">
   <div class="label">КАКИХ НАВЫКОВ ИЛИ ЗНАНИЙ НЕ ХВАТАЕТ ДЛЯ ОЛИМПИАД ИЛИ ПРОГРАММ ИЗ СПИСКА ВЫШЕ</div>
-  <div class="mt3">{{L 3}}</div>
+  <div class="mt3">{{L 3|id=d6-skill-gap}}</div>
 </div>
 
 <div class="tracker mt4">
   <div class="label">ГДЕ Я УЖЕ НА ХАКАТОНЕ · ДЕНЬ 6</div>
   <div class="grid3 mt3">
-    <div><div class="tiny mb2">Что команда сделала сегодня</div>{{LS 1}}</div>
-    <div><div class="tiny mb2">Что переносим на завтра</div>{{LS 1}}</div>
-    <div><div class="tiny mb2">Кто за это отвечает</div>{{LS 1}}</div>
+    <div><div class="tiny mb2">Что команда сделала сегодня</div>{{LS 1|id=d6-hackathon-today}}</div>
+    <div><div class="tiny mb2">Что переносим на завтра</div>{{LS 1|id=d6-hackathon-tomorrow}}</div>
+    <div><div class="tiny mb2">Кто за это отвечает</div>{{LS 1|id=d6-hackathon-owner}}</div>
   </div>
 </div>
 
@@ -203,7 +203,7 @@
 
 <div class="card mt4">
   <div class="label">НАВЫК, КОТОРЫЙ Я ХОЧУ, И С ЧЕГО НАЧНУ</div>
-  <div class="mt3">{{L 2}}</div>
+  <div class="mt3">{{L 2|id=d6-learning-goal|ta}}</div>
 </div>
 
 <!--PAGE class="" anchor="d7" hl="НЕДЕЛЯ 2 · БЛОК 1" hr="ДЕНЬ 7"-->
@@ -226,66 +226,66 @@
   <div class="card">
     <div class="label">В ЧЁМ Я СИЛЁН</div>
     <div class="tiny mt2">Что у меня выходит легче, чем у большинства вокруг?</div>
-    <div class="mt3">{{L 4}}</div>
+    <div class="mt3">{{L 4|id=d7-strengths}}</div>
   </div>
   <div class="card">
     <div class="label">ЧЕГО МНЕ НЕ ХВАТАЕТ</div>
     <div class="tiny mt2">Навыка, привычки, знаний — и что с этим можно сделать?</div>
-    <div class="mt3">{{L 4}}</div>
+    <div class="mt3">{{L 4|id=d7-gaps}}</div>
   </div>
   <div class="card mt4">
     <div class="label">КАКИЕ ШАНСЫ ЕСТЬ ПРЯМО СЕЙЧАС</div>
     <div class="tiny mt2">Люди, программы, возможности, которые уже рядом.</div>
-    <div class="mt3">{{L 4}}</div>
+    <div class="mt3">{{L 4|id=d7-opportunities}}</div>
   </div>
   <div class="card mt4">
     <div class="label">ЧТО МОЖЕТ ПОМЕШАТЬ</div>
     <div class="tiny mt2">И что я могу подготовить заранее?</div>
-    <div class="mt3">{{L 4}}</div>
+    <div class="mt3">{{L 4|id=d7-obstacles}}</div>
   </div>
 </div>
 
 <div class="panel mt4">
   <div class="label">ЧЕМ Я ХОЧУ ЗАНЯТЬСЯ ТЕПЕРЬ · ОДНО ПРЕДЛОЖЕНИЕ, БЕЗ «НАВЕРНОЕ»</div>
-  <div class="mt3">{{L 3}}</div>
+  <div class="mt3">{{L 3|id=d7-direction|ta}}</div>
 </div>
 
 <!--PAGE class="" hl="НЕДЕЛЯ 2 · БЛОК 1" hr="ДЕНЬ 7"-->
 <div class="task"><span class="n">2</span><span class="tt">Каркас моего CV</span><span class="hint">пустые места — это нормально</span></div>
 
 <div class="grid2">
-  <div class="card"><div class="label">ИМЯ И ФАМИЛИЯ</div><div class="mt3">{{L 1}}</div></div>
-  <div class="card"><div class="label">ГОРОД · ПОЧТА</div><div class="mt3">{{L 1}}</div></div>
+  <div class="card"><div class="label">ИМЯ И ФАМИЛИЯ</div><div class="mt3">{{L 1|id=d7-cv-name}}</div></div>
+  <div class="card"><div class="label">ГОРОД · ПОЧТА</div><div class="mt3">{{L 1|id=d7-cv-contact}}</div></div>
 </div>
 
 <div class="card mt4">
   <div class="label">ОБРАЗОВАНИЕ</div>
   <div class="tiny mt2">Школа, класс, профиль.</div>
-  <div class="mt3">{{L 1}}</div>
+  <div class="mt3">{{L 1|id=d7-cv-education}}</div>
 </div>
 
 <div class="card mt4">
   <div class="label">ЧЕМ Я ЗАНИМАЛСЯ ЗА ПОСЛЕДНИЙ ГОД</div>
   <div class="tiny mt2">Сюда идёт всё, что ты делал сам, а не только победы: кружок, тренировки, канал, помощь на мероприятии, собранный компьютер. В твоём возрасте CV показывает интересы и движение, а не список наград.</div>
-  <div class="mt3">{{L 4}}</div>
+  <div class="mt3">{{L 4|id=d7-cv-activities}}</div>
 </div>
 
 <div class="grid2 mt4">
   <div class="card">
     <div class="label">ЧТО УМЕЮ · ПРОГРАММЫ, ЯЗЫКИ, ИНСТРУМЕНТЫ</div>
-    <div class="mt3">{{LS 3}}</div>
+    <div class="mt3">{{LS 3|id=d7-cv-skills}}</div>
   </div>
   <div class="card">
     <div class="label">ССЫЛКИ, КОТОРЫЕ МОЖНО ОТКРЫТЬ</div>
     <div class="tiny mt2">Проект, канал, папка с работами.</div>
-    <div class="mt3">{{LS 2}}</div>
+    <div class="mt3">{{LS 2|id=d7-cv-links}}</div>
   </div>
 </div>
 
 <div class="panel mt4">
   <div class="label">СТРОКА, КОТОРУЮ Я ДОПИШУ СЮДА ЧЕРЕЗ ГОД</div>
   <div class="tiny mt2">Черновик будущего: клуб, который запустишь, конкурс, который попробуешь, проект, который доведёшь.</div>
-  <div class="mt3">{{L 1}}</div>
+  <div class="mt3">{{L 1|id=d7-cv-future-line}}</div>
 </div>
 
 <!--PAGE class="cheat" hl="ШПАРГАЛКА" hr="CV"-->
@@ -345,30 +345,30 @@
 <div class="grid2">
   <div class="card">
     <div class="label">НАПРАВЛЕНИЯ, КУДА МНЕ ИНТЕРЕСНО</div>
-    <div class="mt3">{{L 3}}</div>
+    <div class="mt3">{{L 3|id=d7-internship-fields}}</div>
   </div>
   <div class="card">
     <div class="label">ЧТО Я УЖЕ УМЕЮ — С ПРИМЕРОМ</div>
     <div class="tiny mt2">Учебные артефакты считаются: сайт, план исследования, пройденный курс.</div>
-    <div class="mt3">{{L 3}}</div>
+    <div class="mt3">{{L 3|id=d7-internship-skills}}</div>
   </div>
 </div>
 
 <div class="sec">Организация-цель</div>
 <div class="tiny mb3">Одно реальное место: компания, студия, лаборатория, редакция, клуб. Не «какая-нибудь IT-компания».</div>
 <table>
-  <tr><td class="mid" style="width:52mm;">Название</td><td class="fill"></td></tr>
-  <tr><td class="mid">Почему именно сюда <span class="tiny">конкретный факт про них, а не лесть</span></td><td class="fill"></td></tr>
-  <tr><td class="mid">Куда пишу <span class="tiny">почта, форма на сайте, соцсети</span></td><td class="fill"></td></tr>
+  <tr><td class="mid" style="width:52mm;">Название</td><td class="fill" data-id="d7-internship-org-name"></td></tr>
+  <tr><td class="mid">Почему именно сюда <span class="tiny">конкретный факт про них, а не лесть</span></td><td class="fill" data-id="d7-internship-org-why"></td></tr>
+  <tr><td class="mid">Куда пишу <span class="tiny">почта, форма на сайте, соцсети</span></td><td class="fill" data-id="d7-internship-org-contact"></td></tr>
 </table>
 
 <div class="sec">Письмо: что в нём должно быть</div>
 <div class="tiny mb3">Взрослый читает такое письмо секунд двадцать. Сегодня оно никуда не отправляется — решаете дома с родителями.</div>
 <div class="grid2">
-  <div class="card"><div class="label">КТО Я · ОДНО ПРЕДЛОЖЕНИЕ</div><div class="mt3">{{LS 2}}</div></div>
-  <div class="card"><div class="label">ПОЧЕМУ ИМЕННО ВЫ</div><div class="mt3">{{LS 2}}</div></div>
-  <div class="card"><div class="label">ЧЕМ БУДУ ПОЛЕЗЕН</div><div class="mt3">{{LS 2}}</div></div>
-  <div class="card"><div class="label">ЧТО ПРОШУ · СКОЛЬКО НЕДЕЛЬ</div><div class="mt3">{{LS 2}}</div></div>
+  <div class="card"><div class="label">КТО Я · ОДНО ПРЕДЛОЖЕНИЕ</div><div class="mt3">{{LS 2|id=d7-letter-who|ta}}</div></div>
+  <div class="card"><div class="label">ПОЧЕМУ ИМЕННО ВЫ</div><div class="mt3">{{LS 2|id=d7-letter-why-them|ta}}</div></div>
+  <div class="card"><div class="label">ЧЕМ БУДУ ПОЛЕЗЕН</div><div class="mt3">{{LS 2|id=d7-letter-value|ta}}</div></div>
+  <div class="card"><div class="label">ЧТО ПРОШУ · СКОЛЬКО НЕДЕЛЬ</div><div class="mt3">{{LS 2|id=d7-letter-ask|ta}}</div></div>
 </div>
 
 <div class="note mt4">
@@ -382,29 +382,29 @@
 
 <div class="card">
   <div class="label">МОЙ ВТОРНИК ЧЕРЕЗ ГОД</div>
-  <div class="mt3">{{L 6}}</div>
+  <div class="mt3">{{L 6|id=d7-future-tuesday|ta}}</div>
 </div>
 
 <div class="sec">Что должно быть правдой, чтобы этот день случился</div>
 <div class="tiny mb3">Три условия. Не «много работать», а то, что можно проверить.</div>
 <div class="grid3">
-  <div class="card"><div class="label">01</div><div class="mt3">{{L 2}}</div></div>
-  <div class="card"><div class="label">02</div><div class="mt3">{{L 2}}</div></div>
-  <div class="card"><div class="label">03</div><div class="mt3">{{L 2}}</div></div>
+  <div class="card"><div class="label">01</div><div class="mt3">{{L 2|id=d7-future-condition-1|ta}}</div></div>
+  <div class="card"><div class="label">02</div><div class="mt3">{{L 2|id=d7-future-condition-2|ta}}</div></div>
+  <div class="card"><div class="label">03</div><div class="mt3">{{L 2|id=d7-future-condition-3|ta}}</div></div>
 </div>
 
 <div class="panel mt4">
   <div class="label">ОДНО ДЕЙСТВИЕ, КОТОРОЕ Я СДЕЛАЮ ПЕРВЫМ</div>
   <div class="tiny mt2">То, что делается за один вечер и по чему сразу видно, сделано оно или нет.</div>
-  <div class="mt3">{{L 1}}</div>
+  <div class="mt3">{{L 1|id=d7-future-first-action}}</div>
 </div>
 
 <div class="tracker mt4">
   <div class="label">ГДЕ Я УЖЕ НА ХАКАТОНЕ · ДЕНЬ 7</div>
   <div class="grid3 mt3">
-    <div><div class="tiny mb2">Что команда сделала сегодня</div>{{LS 1}}</div>
-    <div><div class="tiny mb2">Что переносим на завтра</div>{{LS 1}}</div>
-    <div><div class="tiny mb2">Кто за это отвечает</div>{{LS 1}}</div>
+    <div><div class="tiny mb2">Что команда сделала сегодня</div>{{LS 1|id=d7-hackathon-today}}</div>
+    <div><div class="tiny mb2">Что переносим на завтра</div>{{LS 1|id=d7-hackathon-tomorrow}}</div>
+    <div><div class="tiny mb2">Кто за это отвечает</div>{{LS 1|id=d7-hackathon-owner}}</div>
   </div>
 </div>
 
@@ -426,28 +426,28 @@
 
 <table class="tall2">
   <tr><th style="width:12mm;">#</th><th style="width:44mm;">Слайд</th><th style="width:38mm;">Кто говорит</th><th>Главная фраза, которую нельзя забыть</th></tr>
-  <tr><td class="mid tstep">01</td><td class="mid">Проблема</td><td></td><td></td></tr>
-  <tr><td class="mid tstep">02</td><td class="mid">Наши данные</td><td></td><td></td></tr>
-  <tr><td class="mid tstep">03</td><td class="mid">Решение</td><td></td><td></td></tr>
-  <tr><td class="mid tstep">04</td><td class="mid">Как работает</td><td></td><td></td></tr>
-  <tr><td class="mid tstep">05</td><td class="mid">Что нужно для запуска</td><td></td><td></td></tr>
-  <tr><td class="mid tstep">06</td><td class="mid">Первый шаг</td><td></td><td></td></tr>
+  <tr><td class="mid tstep">01</td><td class="mid">Проблема</td><td data-id="d8-slide-problem-speaker"></td><td data-id="d8-slide-problem-phrase"></td></tr>
+  <tr><td class="mid tstep">02</td><td class="mid">Наши данные</td><td data-id="d8-slide-data-speaker"></td><td data-id="d8-slide-data-phrase"></td></tr>
+  <tr><td class="mid tstep">03</td><td class="mid">Решение</td><td data-id="d8-slide-solution-speaker"></td><td data-id="d8-slide-solution-phrase"></td></tr>
+  <tr><td class="mid tstep">04</td><td class="mid">Как работает</td><td data-id="d8-slide-how-speaker"></td><td data-id="d8-slide-how-phrase"></td></tr>
+  <tr><td class="mid tstep">05</td><td class="mid">Что нужно для запуска</td><td data-id="d8-slide-needs-speaker"></td><td data-id="d8-slide-needs-phrase"></td></tr>
+  <tr><td class="mid tstep">06</td><td class="mid">Первый шаг</td><td data-id="d8-slide-first-step-speaker"></td><td data-id="d8-slide-first-step-phrase"></td></tr>
 </table>
 
 <div class="grid2 mt5">
   <div class="panel">
     <div class="label">ПЕРЕД ВЫХОДОМ · ОТМЕТЬ ВСЁ</div>
     <div class="mt3">
-      <div class="ck"><span>Прогнали вслух с таймером хотя бы один раз</span></div>
-      <div class="ck"><span>Файл сдан и открывается с чужого устройства</span></div>
-      <div class="ck"><span>Есть скриншоты на случай, если интернет умрёт</span></div>
-      <div class="ck" style="margin-bottom:0;"><span>Договорились, кто отвечает на вопросы первым</span></div>
+      <div class="ck" data-id="d8-checklist-rehearsed"><span>Прогнали вслух с таймером хотя бы один раз</span></div>
+      <div class="ck" data-id="d8-checklist-file-ready"><span>Файл сдан и открывается с чужого устройства</span></div>
+      <div class="ck" data-id="d8-checklist-screenshots"><span>Есть скриншоты на случай, если интернет умрёт</span></div>
+      <div class="ck" data-id="d8-checklist-who-answers" style="margin-bottom:0;"><span>Договорились, кто отвечает на вопросы первым</span></div>
     </div>
   </div>
   <div class="card">
     <div class="label">ПЕРВАЯ ФРАЗА ЗАЩИТЫ · ЗАПИШИ ДОСЛОВНО</div>
     <div class="tiny mt2">Не «здравствуйте, мы команда…», а сразу проблема или число.</div>
-    <div class="mt3">{{L 4}}</div>
+    <div class="mt3">{{L 4|id=d8-opening-line|ta}}</div>
   </div>
 </div>
 
@@ -457,10 +457,10 @@
 
 <table class="tall2">
   <tr><th style="width:74mm;">Вопрос, который точно зададут</th><th>Наш ответ в одну строку</th></tr>
-  <tr><td class="mid">Откуда цифры? Кого именно вы спрашивали?</td><td></td></tr>
-  <tr><td class="mid">Почему этого ещё никто не сделал?</td><td></td></tr>
-  <tr><td class="mid">Сколько это стоит и кто платит?</td><td></td></tr>
-  <tr><td class="mid">Что вы сделаете в первый же понедельник?</td><td></td></tr>
+  <tr><td class="mid">Откуда цифры? Кого именно вы спрашивали?</td><td data-id="d9-jury-answer-data-source"></td></tr>
+  <tr><td class="mid">Почему этого ещё никто не сделал?</td><td data-id="d9-jury-answer-why-nobody-did"></td></tr>
+  <tr><td class="mid">Сколько это стоит и кто платит?</td><td data-id="d9-jury-answer-cost"></td></tr>
+  <tr><td class="mid">Что вы сделаете в первый же понедельник?</td><td data-id="d9-jury-answer-first-monday"></td></tr>
 </table>
 
 <div class="note mt4">
@@ -470,13 +470,13 @@
 
 <div class="sec">После защиты · разбор по горячим следам</div>
 <div class="grid2">
-  <div class="card"><div class="label">ЧТО СРАБОТАЛО</div><div class="mt3">{{L 3}}</div></div>
-  <div class="card"><div class="label">ЧТО БЫ Я ПЕРЕДЕЛАЛ</div><div class="mt3">{{L 3}}</div></div>
+  <div class="card"><div class="label">ЧТО СРАБОТАЛО</div><div class="mt3">{{L 3|id=d9-what-worked}}</div></div>
+  <div class="card"><div class="label">ЧТО БЫ Я ПЕРЕДЕЛАЛ</div><div class="mt3">{{L 3|id=d9-what-redo}}</div></div>
 </div>
 
 <div class="panel mt4">
   <div class="label">ЧЕМ Я ГОРЖУСЬ ПО ИТОГАМ ДВУХ НЕДЕЛЬ</div>
-  <div class="mt3">{{L 2}}</div>
+  <div class="mt3">{{L 2|id=d9-proud|ta}}</div>
 </div>
 
 <div class="tealbox mt4">
@@ -485,7 +485,7 @@
 </div>
 
 <!--PAGE class="white" hl="ЗАМЕТКИ" hr="СВОБОДНОЕ ПОЛЕ"-->
-<div class="wbox dot" style="height:100%;border:none;"></div>
+<div class="wbox dot" data-id="notes-canvas" style="height:100%;border:none;"></div>
 
 <!--PAGE class="cover nofoot"-->
 <div class="grid-ov"></div>

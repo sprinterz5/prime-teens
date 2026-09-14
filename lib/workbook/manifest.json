@@ -1,0 +1,1653 @@
+{
+  "version": "f2061772b3a6",
+  "fields": [
+    {
+      "id": "notebook-owner",
+      "page": 1,
+      "day": null,
+      "type": "text",
+      "label": "ЭТА ТЕТРАДЬ ПРИНАДЛЕЖИТ",
+      "section": null
+    },
+    {
+      "id": "notebook-class",
+      "page": 1,
+      "day": null,
+      "type": "text",
+      "label": "КЛАСС",
+      "section": null
+    },
+    {
+      "id": "notebook-team",
+      "page": 1,
+      "day": null,
+      "type": "text",
+      "label": "МОЯ КОМАНДА",
+      "section": null
+    },
+    {
+      "id": "d1-success-drawing",
+      "page": 2,
+      "day": 1,
+      "type": "canvas",
+      "label": "Нарисуйте успешный успех",
+      "section": "Нарисуйте успешный успех"
+    },
+    {
+      "id": "d1-success-caption",
+      "page": 2,
+      "day": 1,
+      "type": "textarea",
+      "label": "ОДНА ПОДПИСЬ К КАРТИНКЕ",
+      "section": "Нарисуйте успешный успех"
+    },
+    {
+      "id": "d1-bingo-partner-a",
+      "page": 3,
+      "day": 1,
+      "type": "textarea",
+      "label": "ЗАПОЛНИ СРАЗУ ПОСЛЕ ИГРЫ",
+      "section": "Бинго знакомств"
+    },
+    {
+      "id": "d1-bingo-partner-b",
+      "page": 3,
+      "day": 1,
+      "type": "textarea",
+      "label": "ЗАПОЛНИ СРАЗУ ПОСЛЕ ИГРЫ",
+      "section": "Бинго знакомств"
+    },
+    {
+      "id": "d1-bingo-partner-c",
+      "page": 3,
+      "day": 1,
+      "type": "textarea",
+      "label": "ЗАПОЛНИ СРАЗУ ПОСЛЕ ИГРЫ",
+      "section": "Бинго знакомств"
+    },
+    {
+      "id": "d2-clubs-name-1",
+      "page": 6,
+      "day": 2,
+      "type": "text",
+      "label": "Клубы, которые мне подходят",
+      "section": "Клубы, которые мне подходят"
+    },
+    {
+      "id": "d2-clubs-why-1",
+      "page": 6,
+      "day": 2,
+      "type": "text",
+      "label": "Клубы, которые мне подходят",
+      "section": "Клубы, которые мне подходят"
+    },
+    {
+      "id": "d2-clubs-name-2",
+      "page": 6,
+      "day": 2,
+      "type": "text",
+      "label": "Клубы, которые мне подходят",
+      "section": "Клубы, которые мне подходят"
+    },
+    {
+      "id": "d2-clubs-why-2",
+      "page": 6,
+      "day": 2,
+      "type": "text",
+      "label": "Клубы, которые мне подходят",
+      "section": "Клубы, которые мне подходят"
+    },
+    {
+      "id": "d2-clubs-name-3",
+      "page": 6,
+      "day": 2,
+      "type": "text",
+      "label": "Клубы, которые мне подходят",
+      "section": "Клубы, которые мне подходят"
+    },
+    {
+      "id": "d2-clubs-why-3",
+      "page": 6,
+      "day": 2,
+      "type": "text",
+      "label": "Клубы, которые мне подходят",
+      "section": "Клубы, которые мне подходят"
+    },
+    {
+      "id": "d2-clubs-join-now",
+      "page": 6,
+      "day": 2,
+      "type": "textarea",
+      "label": "КУДА Я МОГУ ПРИЙТИ УЖЕ НА ЭТОЙ НЕДЕЛЕ",
+      "section": "Клубы, которые мне подходят"
+    },
+    {
+      "id": "d2-clubs-new-idea",
+      "page": 6,
+      "day": 2,
+      "type": "textarea",
+      "label": "КАКОГО КЛУБА НЕТ — И Я МОГУ ЕГО СОЗДАТЬ",
+      "section": "Клубы, которые мне подходят"
+    },
+    {
+      "id": "d2-clubs-first-meeting",
+      "page": 6,
+      "day": 2,
+      "type": "textarea",
+      "label": "ЧТО ДОЛЖНО СЛУЧИТЬСЯ НА ПЕРВОЙ ВСТРЕЧЕ, ЧТОБЫ Я ПРИШЁЛ НА ВТОРУЮ",
+      "section": "Клубы, которые мне подходят"
+    },
+    {
+      "id": "d2-club-name",
+      "page": 7,
+      "day": 2,
+      "type": "text",
+      "label": "НАЗВАНИЕ КЛУБА",
+      "section": "План моего клуба"
+    },
+    {
+      "id": "d2-club-mission",
+      "page": 7,
+      "day": 2,
+      "type": "textarea",
+      "label": "НАЗВАНИЕ КЛУБА",
+      "section": "План моего клуба"
+    },
+    {
+      "id": "d2-club-audience",
+      "page": 7,
+      "day": 2,
+      "type": "text",
+      "label": "ДЛЯ КОГО ЭТОТ КЛУБ",
+      "section": "План моего клуба"
+    },
+    {
+      "id": "d2-club-retention",
+      "page": 7,
+      "day": 2,
+      "type": "textarea",
+      "label": "ДЛЯ КОГО ЭТОТ КЛУБ",
+      "section": "План моего клуба"
+    },
+    {
+      "id": "d2-club-first-activity",
+      "page": 7,
+      "day": 2,
+      "type": "textarea",
+      "label": "ЧТО МЫ ДЕЛАЕМ НА ПЕРВОЙ ВСТРЕЧЕ",
+      "section": "План моего клуба"
+    },
+    {
+      "id": "d2-club-recruit",
+      "page": 7,
+      "day": 2,
+      "type": "textarea",
+      "label": "ГДЕ Я ВОЗЬМУ ПЕРВЫХ ПЯТЬ ЧЕЛОВЕК",
+      "section": "План моего клуба"
+    },
+    {
+      "id": "d2-club-logo-sketch",
+      "page": 7,
+      "day": 2,
+      "type": "canvas",
+      "label": "ЭСКИЗ ЛОГОТИПА",
+      "section": "План моего клуба"
+    },
+    {
+      "id": "d2-service-skills-1",
+      "page": 9,
+      "day": 2,
+      "type": "text",
+      "label": "ЧТО Я УМЕЮ ИЛИ ЛЮБЛЮ ДЕЛАТЬ",
+      "section": "Матрица полезности"
+    },
+    {
+      "id": "d2-service-skills-2",
+      "page": 9,
+      "day": 2,
+      "type": "text",
+      "label": "ЧТО Я УМЕЮ ИЛИ ЛЮБЛЮ ДЕЛАТЬ",
+      "section": "Матрица полезности"
+    },
+    {
+      "id": "d2-service-skills-3",
+      "page": 9,
+      "day": 2,
+      "type": "text",
+      "label": "ЧТО Я УМЕЮ ИЛИ ЛЮБЛЮ ДЕЛАТЬ",
+      "section": "Матрица полезности"
+    },
+    {
+      "id": "d2-service-skills-4",
+      "page": 9,
+      "day": 2,
+      "type": "text",
+      "label": "ЧТО Я УМЕЮ ИЛИ ЛЮБЛЮ ДЕЛАТЬ",
+      "section": "Матрица полезности"
+    },
+    {
+      "id": "d2-service-needs-1",
+      "page": 9,
+      "day": 2,
+      "type": "text",
+      "label": "КОМУ В МОЁМ ГОРОДЕ ИЛИ ШКОЛЕ НУЖНА ПОМОЩЬ",
+      "section": "Матрица полезности"
+    },
+    {
+      "id": "d2-service-needs-2",
+      "page": 9,
+      "day": 2,
+      "type": "text",
+      "label": "КОМУ В МОЁМ ГОРОДЕ ИЛИ ШКОЛЕ НУЖНА ПОМОЩЬ",
+      "section": "Матрица полезности"
+    },
+    {
+      "id": "d2-service-needs-3",
+      "page": 9,
+      "day": 2,
+      "type": "text",
+      "label": "КОМУ В МОЁМ ГОРОДЕ ИЛИ ШКОЛЕ НУЖНА ПОМОЩЬ",
+      "section": "Матрица полезности"
+    },
+    {
+      "id": "d2-service-needs-4",
+      "page": 9,
+      "day": 2,
+      "type": "text",
+      "label": "КОМУ В МОЁМ ГОРОДЕ ИЛИ ШКОЛЕ НУЖНА ПОМОЩЬ",
+      "section": "Матрица полезности"
+    },
+    {
+      "id": "d2-service-idea",
+      "page": 9,
+      "day": 2,
+      "type": "textarea",
+      "label": "МОЯ ИДЕЯ ПРОЕКТА · СОЕДИНИ ЛЕВОЕ С ПРАВЫМ",
+      "section": "Матрица полезности"
+    },
+    {
+      "id": "d2-service-first-step",
+      "page": 9,
+      "day": 2,
+      "type": "textarea",
+      "label": "Первый шаг за один вечер",
+      "section": "Первый шаг за один вечер"
+    },
+    {
+      "id": "d2-service-partner",
+      "page": 9,
+      "day": 2,
+      "type": "text",
+      "label": "С КЕМ Я ЭТО СДЕЛАЮ",
+      "section": "Первый шаг за один вечер"
+    },
+    {
+      "id": "d2-interests-map",
+      "page": 10,
+      "day": 2,
+      "type": "canvas",
+      "label": "Мои интересы",
+      "section": "Мои интересы"
+    },
+    {
+      "id": "d2-interests-neighbor-branch",
+      "page": 10,
+      "day": 2,
+      "type": "text",
+      "label": "ВЕТКА, КОТОРУЮ ДОРИСОВАЛ СОСЕД",
+      "section": "Мои интересы"
+    },
+    {
+      "id": "d3-chosen-branch",
+      "page": 11,
+      "day": 3,
+      "type": "text",
+      "label": "МОЯ ВЕТКА",
+      "section": "По вчерашней карте"
+    },
+    {
+      "id": "d3-branch-reason",
+      "page": 11,
+      "day": 3,
+      "type": "textarea",
+      "label": "ВЕТКА, КОТОРУЮ ОБВЁЛ",
+      "section": "По вчерашней карте"
+    },
+    {
+      "id": "d3-branch-question",
+      "page": 11,
+      "day": 3,
+      "type": "textarea",
+      "label": "КАКОЙ ВОПРОС ИЗ НЕЁ ТОРЧИТ",
+      "section": "По вчерашней карте"
+    },
+    {
+      "id": "d3-neighbor-reaction",
+      "page": 11,
+      "day": 3,
+      "type": "textarea",
+      "label": "ЧТО СКАЗАЛ СОСЕД, КОГДА УСЛЫШАЛ МОЙ ВОПРОС",
+      "section": "По вчерашней карте"
+    },
+    {
+      "id": "d3-research-question",
+      "page": 12,
+      "day": 3,
+      "type": "textarea",
+      "label": "1 · Исследовательский вопрос",
+      "section": "1 · Исследовательский вопрос"
+    },
+    {
+      "id": "d3-question-filter-specific",
+      "page": 12,
+      "day": 3,
+      "type": "checkbox",
+      "label": "Конкретный — понятно, кто, где и что измеряем",
+      "section": "1 · Исследовательский вопрос"
+    },
+    {
+      "id": "d3-question-filter-measurable",
+      "page": 12,
+      "day": 3,
+      "type": "checkbox",
+      "label": "Измеримый — ответ будет числом или сравнением, а не «хорошо / плохо»",
+      "section": "1 · Исследовательский вопрос"
+    },
+    {
+      "id": "d3-question-filter-feasible",
+      "page": 12,
+      "day": 3,
+      "type": "checkbox",
+      "label": "Посильный — можно ответить в отведённый срок без лаборатории и бюджета",
+      "section": "1 · Исследовательский вопрос"
+    },
+    {
+      "id": "d3-question-filter-personal",
+      "page": 12,
+      "day": 3,
+      "type": "checkbox",
+      "label": "Твой — тебе самому интересно узнать ответ",
+      "section": "1 · Исследовательский вопрос"
+    },
+    {
+      "id": "d3-hypothesis-if",
+      "page": 12,
+      "day": 3,
+      "type": "textarea",
+      "label": "ЕСЛИ",
+      "section": "2 · Гипотеза — мой прогноз ответа"
+    },
+    {
+      "id": "d3-hypothesis-then",
+      "page": 12,
+      "day": 3,
+      "type": "textarea",
+      "label": "ТО",
+      "section": "2 · Гипотеза — мой прогноз ответа"
+    },
+    {
+      "id": "d3-hypothesis-because",
+      "page": 12,
+      "day": 3,
+      "type": "textarea",
+      "label": "ПОТОМУ ЧТО",
+      "section": "2 · Гипотеза — мой прогноз ответа"
+    },
+    {
+      "id": "d3-question-after-attack",
+      "page": 12,
+      "day": 3,
+      "type": "textarea",
+      "label": "ЧТО В МОЁМ ВОПРОСЕ ИЗМЕНИЛОСЬ ПОСЛЕ АТАКИ",
+      "section": "3 · Атака в парах · четыре минуты на каждого"
+    },
+    {
+      "id": "d3-survey-topic",
+      "page": 14,
+      "day": 3,
+      "type": "text",
+      "label": "Что нужно для моего опроса",
+      "section": "Что нужно для моего опроса"
+    },
+    {
+      "id": "d3-survey-audience",
+      "page": 14,
+      "day": 3,
+      "type": "text",
+      "label": "Что нужно для моего опроса",
+      "section": "Что нужно для моего опроса"
+    },
+    {
+      "id": "d3-survey-count",
+      "page": 14,
+      "day": 3,
+      "type": "text",
+      "label": "Что нужно для моего опроса",
+      "section": "Что нужно для моего опроса"
+    },
+    {
+      "id": "d3-survey-tool",
+      "page": 14,
+      "day": 3,
+      "type": "text",
+      "label": "Что нужно для моего опроса",
+      "section": "Что нужно для моего опроса"
+    },
+    {
+      "id": "d3-survey-question-1",
+      "page": 14,
+      "day": 3,
+      "type": "text",
+      "label": "ПЯТЬ ВОПРОСОВ АНКЕТЫ",
+      "section": "Что нужно для моего опроса"
+    },
+    {
+      "id": "d3-survey-question-2",
+      "page": 14,
+      "day": 3,
+      "type": "text",
+      "label": "ПЯТЬ ВОПРОСОВ АНКЕТЫ",
+      "section": "Что нужно для моего опроса"
+    },
+    {
+      "id": "d3-survey-question-3",
+      "page": 14,
+      "day": 3,
+      "type": "text",
+      "label": "ПЯТЬ ВОПРОСОВ АНКЕТЫ",
+      "section": "Что нужно для моего опроса"
+    },
+    {
+      "id": "d3-survey-question-4",
+      "page": 14,
+      "day": 3,
+      "type": "text",
+      "label": "ПЯТЬ ВОПРОСОВ АНКЕТЫ",
+      "section": "Что нужно для моего опроса"
+    },
+    {
+      "id": "d3-survey-question-5",
+      "page": 14,
+      "day": 3,
+      "type": "text",
+      "label": "ПЯТЬ ВОПРОСОВ АНКЕТЫ",
+      "section": "Что нужно для моего опроса"
+    },
+    {
+      "id": "d3-survey-question-6",
+      "page": 14,
+      "day": 3,
+      "type": "text",
+      "label": "ПЯТЬ ВОПРОСОВ АНКЕТЫ",
+      "section": "Что нужно для моего опроса"
+    },
+    {
+      "id": "d3-survey-risk-1",
+      "page": 14,
+      "day": 3,
+      "type": "text",
+      "label": "ЧТО МОЖЕТ ПОЙТИ НЕ ТАК И ЧТО Я СДЕЛАЮ",
+      "section": "Что нужно для моего опроса"
+    },
+    {
+      "id": "d3-survey-risk-2",
+      "page": 14,
+      "day": 3,
+      "type": "text",
+      "label": "ЧТО МОЖЕТ ПОЙТИ НЕ ТАК И ЧТО Я СДЕЛАЮ",
+      "section": "Что нужно для моего опроса"
+    },
+    {
+      "id": "d3-survey-risk-3",
+      "page": 14,
+      "day": 3,
+      "type": "text",
+      "label": "ЧТО МОЖЕТ ПОЙТИ НЕ ТАК И ЧТО Я СДЕЛАЮ",
+      "section": "Что нужно для моего опроса"
+    },
+    {
+      "id": "d3-survey-risk-4",
+      "page": 14,
+      "day": 3,
+      "type": "text",
+      "label": "ЧТО МОЖЕТ ПОЙТИ НЕ ТАК И ЧТО Я СДЕЛАЮ",
+      "section": "Что нужно для моего опроса"
+    },
+    {
+      "id": "d3-survey-risk-5",
+      "page": 14,
+      "day": 3,
+      "type": "text",
+      "label": "ЧТО МОЖЕТ ПОЙТИ НЕ ТАК И ЧТО Я СДЕЛАЮ",
+      "section": "Что нужно для моего опроса"
+    },
+    {
+      "id": "d3-survey-checklist-diverse",
+      "page": 14,
+      "day": 3,
+      "type": "checkbox",
+      "label": "Опросить максимально разных людей — не только одноклассников",
+      "section": "Что нужно для моего опроса"
+    },
+    {
+      "id": "d3-survey-checklist-record",
+      "page": 14,
+      "day": 3,
+      "type": "checkbox",
+      "label": "Записывать ответы сразу, не откладывая на потом",
+      "section": "Что нужно для моего опроса"
+    },
+    {
+      "id": "d4-country",
+      "page": 15,
+      "day": 4,
+      "type": "text",
+      "label": "МОЯ СТРАНА",
+      "section": "Лист делегата"
+    },
+    {
+      "id": "d4-country-position",
+      "page": 15,
+      "day": 4,
+      "type": "textarea",
+      "label": "МОЯ СТРАНА",
+      "section": "Лист делегата"
+    },
+    {
+      "id": "d4-country-facts-1",
+      "page": 15,
+      "day": 4,
+      "type": "text",
+      "label": "ТРИ ФАКТА-ОПОРЫ ИЗ ПРОФИЛЯ СТРАНЫ",
+      "section": "Лист делегата"
+    },
+    {
+      "id": "d4-country-facts-2",
+      "page": 15,
+      "day": 4,
+      "type": "text",
+      "label": "ТРИ ФАКТА-ОПОРЫ ИЗ ПРОФИЛЯ СТРАНЫ",
+      "section": "Лист делегата"
+    },
+    {
+      "id": "d4-country-facts-3",
+      "page": 15,
+      "day": 4,
+      "type": "text",
+      "label": "ТРИ ФАКТА-ОПОРЫ ИЗ ПРОФИЛЯ СТРАНЫ",
+      "section": "Лист делегата"
+    },
+    {
+      "id": "d4-country-facts-4",
+      "page": 15,
+      "day": 4,
+      "type": "text",
+      "label": "ТРИ ФАКТА-ОПОРЫ ИЗ ПРОФИЛЯ СТРАНЫ",
+      "section": "Лист делегата"
+    },
+    {
+      "id": "d4-allies-1",
+      "page": 15,
+      "day": 4,
+      "type": "text",
+      "label": "СОЮЗНИКИ · КТО ГОВОРИТ ПОХОЖЕЕ",
+      "section": "Лист делегата"
+    },
+    {
+      "id": "d4-allies-2",
+      "page": 15,
+      "day": 4,
+      "type": "text",
+      "label": "СОЮЗНИКИ · КТО ГОВОРИТ ПОХОЖЕЕ",
+      "section": "Лист делегата"
+    },
+    {
+      "id": "d4-allies-3",
+      "page": 15,
+      "day": 4,
+      "type": "text",
+      "label": "СОЮЗНИКИ · КТО ГОВОРИТ ПОХОЖЕЕ",
+      "section": "Лист делегата"
+    },
+    {
+      "id": "d4-opponents-1",
+      "page": 15,
+      "day": 4,
+      "type": "text",
+      "label": "ОППОНЕНТЫ · ЧЕЙ АРГУМЕНТ МЕНЯ ЦАРАПАЕТ",
+      "section": "Лист делегата"
+    },
+    {
+      "id": "d4-opponents-2",
+      "page": 15,
+      "day": 4,
+      "type": "text",
+      "label": "ОППОНЕНТЫ · ЧЕЙ АРГУМЕНТ МЕНЯ ЦАРАПАЕТ",
+      "section": "Лист делегата"
+    },
+    {
+      "id": "d4-opponents-3",
+      "page": 15,
+      "day": 4,
+      "type": "text",
+      "label": "ОППОНЕНТЫ · ЧЕЙ АРГУМЕНТ МЕНЯ ЦАРАПАЕТ",
+      "section": "Лист делегата"
+    },
+    {
+      "id": "d4-resolution-points-1",
+      "page": 15,
+      "day": 4,
+      "type": "text",
+      "label": "Что моя страна вносит в резолюцию",
+      "section": "Что моя страна вносит в резолюцию"
+    },
+    {
+      "id": "d4-resolution-points-2",
+      "page": 15,
+      "day": 4,
+      "type": "text",
+      "label": "Что моя страна вносит в резолюцию",
+      "section": "Что моя страна вносит в резолюцию"
+    },
+    {
+      "id": "d4-resolution-points-3",
+      "page": 15,
+      "day": 4,
+      "type": "text",
+      "label": "Что моя страна вносит в резолюцию",
+      "section": "Что моя страна вносит в резолюцию"
+    },
+    {
+      "id": "d4-resolution-points-4",
+      "page": 15,
+      "day": 4,
+      "type": "text",
+      "label": "Что моя страна вносит в резолюцию",
+      "section": "Что моя страна вносит в резолюцию"
+    },
+    {
+      "id": "d4-vote-result",
+      "page": 15,
+      "day": 4,
+      "type": "text",
+      "label": "ИТОГ ГОЛОСОВАНИЯ",
+      "section": "Что моя страна вносит в резолюцию"
+    },
+    {
+      "id": "d4-what-worked",
+      "page": 15,
+      "day": 4,
+      "type": "text",
+      "label": "ЧТО У МЕНЯ СРАБОТАЛО",
+      "section": "Что моя страна вносит в резолюцию"
+    },
+    {
+      "id": "d4-what-failed",
+      "page": 15,
+      "day": 4,
+      "type": "text",
+      "label": "ЧТО ПРОВАЛИЛОСЬ",
+      "section": "Что моя страна вносит в резолюцию"
+    },
+    {
+      "id": "d5-mvp-keep",
+      "page": 17,
+      "day": 5,
+      "type": "textarea",
+      "label": "ОСТАВЛЯЮ",
+      "section": "Урежь до MVP"
+    },
+    {
+      "id": "d5-mvp-why",
+      "page": 17,
+      "day": 5,
+      "type": "textarea",
+      "label": "ПОЧЕМУ ИМЕННО ОНА — ОДНО ПРЕДЛОЖЕНИЕ",
+      "section": "Урежь до MVP"
+    },
+    {
+      "id": "d5-mvp-cut-1",
+      "page": 17,
+      "day": 5,
+      "type": "text",
+      "label": "ЧТО ВЫЧЕРКНУЛ, НО ЖАЛКО — И КОГДА ЭТО МОЖНО ВЕРНУТЬ",
+      "section": "Урежь до MVP"
+    },
+    {
+      "id": "d5-mvp-cut-2",
+      "page": 17,
+      "day": 5,
+      "type": "text",
+      "label": "ЧТО ВЫЧЕРКНУЛ, НО ЖАЛКО — И КОГДА ЭТО МОЖНО ВЕРНУТЬ",
+      "section": "Урежь до MVP"
+    },
+    {
+      "id": "d5-mvp-cut-3",
+      "page": 17,
+      "day": 5,
+      "type": "text",
+      "label": "ЧТО ВЫЧЕРКНУЛ, НО ЖАЛКО — И КОГДА ЭТО МОЖНО ВЕРНУТЬ",
+      "section": "Урежь до MVP"
+    },
+    {
+      "id": "d5-idea",
+      "page": 18,
+      "day": 5,
+      "type": "text",
+      "label": "МОЯ ИДЕЯ",
+      "section": "Четыре вопроса"
+    },
+    {
+      "id": "d5-idea-whose-problem",
+      "page": 18,
+      "day": 5,
+      "type": "textarea",
+      "label": "1 · ЧЬЯ ЭТО ПРОБЛЕМА",
+      "section": "Четыре вопроса"
+    },
+    {
+      "id": "d5-idea-problem",
+      "page": 18,
+      "day": 5,
+      "type": "textarea",
+      "label": "2 · ЧТО ИМЕННО НЕ ТАК",
+      "section": "Четыре вопроса"
+    },
+    {
+      "id": "d5-idea-solution",
+      "page": 18,
+      "day": 5,
+      "type": "textarea",
+      "label": "3 · ЧТО ПРЕДЛАГАЕМ",
+      "section": "Четыре вопроса"
+    },
+    {
+      "id": "d5-idea-why-works",
+      "page": 18,
+      "day": 5,
+      "type": "textarea",
+      "label": "4 · ПОЧЕМУ СРАБОТАЕТ",
+      "section": "Четыре вопроса"
+    },
+    {
+      "id": "d5-pitch-feedback",
+      "page": 18,
+      "day": 5,
+      "type": "textarea",
+      "label": "ЧТО СКАЗАЛИ ПРО МОЙ ПРОЕКТ",
+      "section": "Питч на 60 секунд"
+    },
+    {
+      "id": "d5-pitch-technique",
+      "page": 18,
+      "day": 5,
+      "type": "textarea",
+      "label": "ЧЕЙ ПРИЁМ Я ЗАБИРАЮ СЕБЕ",
+      "section": "Питч на 60 секунд"
+    },
+    {
+      "id": "d5-vibecoding-result",
+      "page": 19,
+      "day": 5,
+      "type": "textarea",
+      "label": "ЧТО Я СОБРАЛ И ГДЕ ЭТО ОТКРЫВАЕТСЯ",
+      "section": null
+    },
+    {
+      "id": "d5-hackathon-defense-minutes",
+      "page": 20,
+      "day": 5,
+      "type": "text",
+      "label": "ЗАЩИТА, МИН",
+      "section": null
+    },
+    {
+      "id": "d5-hackathon-questions-minutes",
+      "page": 20,
+      "day": 5,
+      "type": "text",
+      "label": "ВОПРОСЫ, МИН",
+      "section": null
+    },
+    {
+      "id": "d5-hackathon-file-deadline",
+      "page": 20,
+      "day": 5,
+      "type": "text",
+      "label": "СДАЧА ФАЙЛА",
+      "section": null
+    },
+    {
+      "id": "d5-hackathon-team-size",
+      "page": 20,
+      "day": 5,
+      "type": "text",
+      "label": "РАЗМЕР КОМАНДЫ",
+      "section": null
+    },
+    {
+      "id": "d6-olympiad-name-1",
+      "page": 21,
+      "day": 6,
+      "type": "text",
+      "label": "Поиск олимпиад с ИИ",
+      "section": "Поиск олимпиад с ИИ"
+    },
+    {
+      "id": "d6-olympiad-org-1",
+      "page": 21,
+      "day": 6,
+      "type": "text",
+      "label": "Поиск олимпиад с ИИ",
+      "section": "Поиск олимпиад с ИИ"
+    },
+    {
+      "id": "d6-olympiad-verified-1",
+      "page": 21,
+      "day": 6,
+      "type": "text",
+      "label": "Поиск олимпиад с ИИ",
+      "section": "Поиск олимпиад с ИИ"
+    },
+    {
+      "id": "d6-olympiad-name-2",
+      "page": 21,
+      "day": 6,
+      "type": "text",
+      "label": "Поиск олимпиад с ИИ",
+      "section": "Поиск олимпиад с ИИ"
+    },
+    {
+      "id": "d6-olympiad-org-2",
+      "page": 21,
+      "day": 6,
+      "type": "text",
+      "label": "Поиск олимпиад с ИИ",
+      "section": "Поиск олимпиад с ИИ"
+    },
+    {
+      "id": "d6-olympiad-verified-2",
+      "page": 21,
+      "day": 6,
+      "type": "text",
+      "label": "Поиск олимпиад с ИИ",
+      "section": "Поиск олимпиад с ИИ"
+    },
+    {
+      "id": "d6-olympiad-name-3",
+      "page": 21,
+      "day": 6,
+      "type": "text",
+      "label": "Поиск олимпиад с ИИ",
+      "section": "Поиск олимпиад с ИИ"
+    },
+    {
+      "id": "d6-olympiad-org-3",
+      "page": 21,
+      "day": 6,
+      "type": "text",
+      "label": "Поиск олимпиад с ИИ",
+      "section": "Поиск олимпиад с ИИ"
+    },
+    {
+      "id": "d6-olympiad-verified-3",
+      "page": 21,
+      "day": 6,
+      "type": "text",
+      "label": "Поиск олимпиад с ИИ",
+      "section": "Поиск олимпиад с ИИ"
+    },
+    {
+      "id": "d6-olympiad-choice",
+      "page": 21,
+      "day": 6,
+      "type": "textarea",
+      "label": "КАКУЮ ИЗ НИХ Я РЕАЛЬНО ПОПРОБУЮ В ЭТОМ ЦИКЛЕ",
+      "section": "Поиск олимпиад с ИИ"
+    },
+    {
+      "id": "d6-summer-country-1",
+      "page": 22,
+      "day": 6,
+      "type": "text",
+      "label": "Три страны, три города",
+      "section": "Три страны, три города"
+    },
+    {
+      "id": "d6-summer-program-1",
+      "page": 22,
+      "day": 6,
+      "type": "text",
+      "label": "Три страны, три города",
+      "section": "Три страны, три города"
+    },
+    {
+      "id": "d6-summer-country-2",
+      "page": 22,
+      "day": 6,
+      "type": "text",
+      "label": "Три страны, три города",
+      "section": "Три страны, три города"
+    },
+    {
+      "id": "d6-summer-program-2",
+      "page": 22,
+      "day": 6,
+      "type": "text",
+      "label": "Три страны, три города",
+      "section": "Три страны, три города"
+    },
+    {
+      "id": "d6-summer-country-3",
+      "page": 22,
+      "day": 6,
+      "type": "text",
+      "label": "Три страны, три города",
+      "section": "Три страны, три города"
+    },
+    {
+      "id": "d6-summer-program-3",
+      "page": 22,
+      "day": 6,
+      "type": "text",
+      "label": "Три страны, три города",
+      "section": "Три страны, три города"
+    },
+    {
+      "id": "d6-skill-gap-1",
+      "page": 22,
+      "day": 6,
+      "type": "text",
+      "label": "КАКИХ НАВЫКОВ ИЛИ ЗНАНИЙ НЕ ХВАТАЕТ ДЛЯ ОЛИМПИАД ИЛИ ПРОГРАММ ИЗ СПИСКА ВЫШЕ",
+      "section": "Чего мне не хватает"
+    },
+    {
+      "id": "d6-skill-gap-2",
+      "page": 22,
+      "day": 6,
+      "type": "text",
+      "label": "КАКИХ НАВЫКОВ ИЛИ ЗНАНИЙ НЕ ХВАТАЕТ ДЛЯ ОЛИМПИАД ИЛИ ПРОГРАММ ИЗ СПИСКА ВЫШЕ",
+      "section": "Чего мне не хватает"
+    },
+    {
+      "id": "d6-skill-gap-3",
+      "page": 22,
+      "day": 6,
+      "type": "text",
+      "label": "КАКИХ НАВЫКОВ ИЛИ ЗНАНИЙ НЕ ХВАТАЕТ ДЛЯ ОЛИМПИАД ИЛИ ПРОГРАММ ИЗ СПИСКА ВЫШЕ",
+      "section": "Чего мне не хватает"
+    },
+    {
+      "id": "d6-hackathon-today",
+      "page": 22,
+      "day": 6,
+      "type": "text",
+      "label": "ГДЕ Я УЖЕ НА ХАКАТОНЕ · ДЕНЬ 6",
+      "section": "Чего мне не хватает"
+    },
+    {
+      "id": "d6-hackathon-tomorrow",
+      "page": 22,
+      "day": 6,
+      "type": "text",
+      "label": "ГДЕ Я УЖЕ НА ХАКАТОНЕ · ДЕНЬ 6",
+      "section": "Чего мне не хватает"
+    },
+    {
+      "id": "d6-hackathon-owner",
+      "page": 22,
+      "day": 6,
+      "type": "text",
+      "label": "ГДЕ Я УЖЕ НА ХАКАТОНЕ · ДЕНЬ 6",
+      "section": "Чего мне не хватает"
+    },
+    {
+      "id": "d6-learning-goal",
+      "page": 23,
+      "day": 6,
+      "type": "textarea",
+      "label": "НАВЫК, КОТОРЫЙ Я ХОЧУ, И С ЧЕГО НАЧНУ",
+      "section": null
+    },
+    {
+      "id": "d7-strengths-1",
+      "page": 24,
+      "day": 7,
+      "type": "text",
+      "label": "В ЧЁМ Я СИЛЁН",
+      "section": "Самоанализ"
+    },
+    {
+      "id": "d7-strengths-2",
+      "page": 24,
+      "day": 7,
+      "type": "text",
+      "label": "В ЧЁМ Я СИЛЁН",
+      "section": "Самоанализ"
+    },
+    {
+      "id": "d7-strengths-3",
+      "page": 24,
+      "day": 7,
+      "type": "text",
+      "label": "В ЧЁМ Я СИЛЁН",
+      "section": "Самоанализ"
+    },
+    {
+      "id": "d7-strengths-4",
+      "page": 24,
+      "day": 7,
+      "type": "text",
+      "label": "В ЧЁМ Я СИЛЁН",
+      "section": "Самоанализ"
+    },
+    {
+      "id": "d7-gaps-1",
+      "page": 24,
+      "day": 7,
+      "type": "text",
+      "label": "ЧЕГО МНЕ НЕ ХВАТАЕТ",
+      "section": "Самоанализ"
+    },
+    {
+      "id": "d7-gaps-2",
+      "page": 24,
+      "day": 7,
+      "type": "text",
+      "label": "ЧЕГО МНЕ НЕ ХВАТАЕТ",
+      "section": "Самоанализ"
+    },
+    {
+      "id": "d7-gaps-3",
+      "page": 24,
+      "day": 7,
+      "type": "text",
+      "label": "ЧЕГО МНЕ НЕ ХВАТАЕТ",
+      "section": "Самоанализ"
+    },
+    {
+      "id": "d7-gaps-4",
+      "page": 24,
+      "day": 7,
+      "type": "text",
+      "label": "ЧЕГО МНЕ НЕ ХВАТАЕТ",
+      "section": "Самоанализ"
+    },
+    {
+      "id": "d7-opportunities-1",
+      "page": 24,
+      "day": 7,
+      "type": "text",
+      "label": "КАКИЕ ШАНСЫ ЕСТЬ ПРЯМО СЕЙЧАС",
+      "section": "Самоанализ"
+    },
+    {
+      "id": "d7-opportunities-2",
+      "page": 24,
+      "day": 7,
+      "type": "text",
+      "label": "КАКИЕ ШАНСЫ ЕСТЬ ПРЯМО СЕЙЧАС",
+      "section": "Самоанализ"
+    },
+    {
+      "id": "d7-opportunities-3",
+      "page": 24,
+      "day": 7,
+      "type": "text",
+      "label": "КАКИЕ ШАНСЫ ЕСТЬ ПРЯМО СЕЙЧАС",
+      "section": "Самоанализ"
+    },
+    {
+      "id": "d7-opportunities-4",
+      "page": 24,
+      "day": 7,
+      "type": "text",
+      "label": "КАКИЕ ШАНСЫ ЕСТЬ ПРЯМО СЕЙЧАС",
+      "section": "Самоанализ"
+    },
+    {
+      "id": "d7-obstacles-1",
+      "page": 24,
+      "day": 7,
+      "type": "text",
+      "label": "ЧТО МОЖЕТ ПОМЕШАТЬ",
+      "section": "Самоанализ"
+    },
+    {
+      "id": "d7-obstacles-2",
+      "page": 24,
+      "day": 7,
+      "type": "text",
+      "label": "ЧТО МОЖЕТ ПОМЕШАТЬ",
+      "section": "Самоанализ"
+    },
+    {
+      "id": "d7-obstacles-3",
+      "page": 24,
+      "day": 7,
+      "type": "text",
+      "label": "ЧТО МОЖЕТ ПОМЕШАТЬ",
+      "section": "Самоанализ"
+    },
+    {
+      "id": "d7-obstacles-4",
+      "page": 24,
+      "day": 7,
+      "type": "text",
+      "label": "ЧТО МОЖЕТ ПОМЕШАТЬ",
+      "section": "Самоанализ"
+    },
+    {
+      "id": "d7-direction",
+      "page": 24,
+      "day": 7,
+      "type": "textarea",
+      "label": "ЧЕМ Я ХОЧУ ЗАНЯТЬСЯ ТЕПЕРЬ · ОДНО ПРЕДЛОЖЕНИЕ, БЕЗ «НАВЕРНОЕ»",
+      "section": "Самоанализ"
+    },
+    {
+      "id": "d7-cv-name",
+      "page": 25,
+      "day": 7,
+      "type": "text",
+      "label": "ИМЯ И ФАМИЛИЯ",
+      "section": "Каркас моего CV"
+    },
+    {
+      "id": "d7-cv-contact",
+      "page": 25,
+      "day": 7,
+      "type": "text",
+      "label": "ГОРОД · ПОЧТА",
+      "section": "Каркас моего CV"
+    },
+    {
+      "id": "d7-cv-education",
+      "page": 25,
+      "day": 7,
+      "type": "text",
+      "label": "ОБРАЗОВАНИЕ",
+      "section": "Каркас моего CV"
+    },
+    {
+      "id": "d7-cv-activities-1",
+      "page": 25,
+      "day": 7,
+      "type": "text",
+      "label": "ЧЕМ Я ЗАНИМАЛСЯ ЗА ПОСЛЕДНИЙ ГОД",
+      "section": "Каркас моего CV"
+    },
+    {
+      "id": "d7-cv-activities-2",
+      "page": 25,
+      "day": 7,
+      "type": "text",
+      "label": "ЧЕМ Я ЗАНИМАЛСЯ ЗА ПОСЛЕДНИЙ ГОД",
+      "section": "Каркас моего CV"
+    },
+    {
+      "id": "d7-cv-activities-3",
+      "page": 25,
+      "day": 7,
+      "type": "text",
+      "label": "ЧЕМ Я ЗАНИМАЛСЯ ЗА ПОСЛЕДНИЙ ГОД",
+      "section": "Каркас моего CV"
+    },
+    {
+      "id": "d7-cv-activities-4",
+      "page": 25,
+      "day": 7,
+      "type": "text",
+      "label": "ЧЕМ Я ЗАНИМАЛСЯ ЗА ПОСЛЕДНИЙ ГОД",
+      "section": "Каркас моего CV"
+    },
+    {
+      "id": "d7-cv-skills-1",
+      "page": 25,
+      "day": 7,
+      "type": "text",
+      "label": "ЧТО УМЕЮ · ПРОГРАММЫ, ЯЗЫКИ, ИНСТРУМЕНТЫ",
+      "section": "Каркас моего CV"
+    },
+    {
+      "id": "d7-cv-skills-2",
+      "page": 25,
+      "day": 7,
+      "type": "text",
+      "label": "ЧТО УМЕЮ · ПРОГРАММЫ, ЯЗЫКИ, ИНСТРУМЕНТЫ",
+      "section": "Каркас моего CV"
+    },
+    {
+      "id": "d7-cv-skills-3",
+      "page": 25,
+      "day": 7,
+      "type": "text",
+      "label": "ЧТО УМЕЮ · ПРОГРАММЫ, ЯЗЫКИ, ИНСТРУМЕНТЫ",
+      "section": "Каркас моего CV"
+    },
+    {
+      "id": "d7-cv-links-1",
+      "page": 25,
+      "day": 7,
+      "type": "text",
+      "label": "ССЫЛКИ, КОТОРЫЕ МОЖНО ОТКРЫТЬ",
+      "section": "Каркас моего CV"
+    },
+    {
+      "id": "d7-cv-links-2",
+      "page": 25,
+      "day": 7,
+      "type": "text",
+      "label": "ССЫЛКИ, КОТОРЫЕ МОЖНО ОТКРЫТЬ",
+      "section": "Каркас моего CV"
+    },
+    {
+      "id": "d7-cv-future-line",
+      "page": 25,
+      "day": 7,
+      "type": "text",
+      "label": "СТРОКА, КОТОРУЮ Я ДОПИШУ СЮДА ЧЕРЕЗ ГОД",
+      "section": "Каркас моего CV"
+    },
+    {
+      "id": "d7-internship-fields-1",
+      "page": 27,
+      "day": 7,
+      "type": "text",
+      "label": "НАПРАВЛЕНИЯ, КУДА МНЕ ИНТЕРЕСНО",
+      "section": "Куда именно я напишу"
+    },
+    {
+      "id": "d7-internship-fields-2",
+      "page": 27,
+      "day": 7,
+      "type": "text",
+      "label": "НАПРАВЛЕНИЯ, КУДА МНЕ ИНТЕРЕСНО",
+      "section": "Куда именно я напишу"
+    },
+    {
+      "id": "d7-internship-fields-3",
+      "page": 27,
+      "day": 7,
+      "type": "text",
+      "label": "НАПРАВЛЕНИЯ, КУДА МНЕ ИНТЕРЕСНО",
+      "section": "Куда именно я напишу"
+    },
+    {
+      "id": "d7-internship-skills-1",
+      "page": 27,
+      "day": 7,
+      "type": "text",
+      "label": "ЧТО Я УЖЕ УМЕЮ — С ПРИМЕРОМ",
+      "section": "Куда именно я напишу"
+    },
+    {
+      "id": "d7-internship-skills-2",
+      "page": 27,
+      "day": 7,
+      "type": "text",
+      "label": "ЧТО Я УЖЕ УМЕЮ — С ПРИМЕРОМ",
+      "section": "Куда именно я напишу"
+    },
+    {
+      "id": "d7-internship-skills-3",
+      "page": 27,
+      "day": 7,
+      "type": "text",
+      "label": "ЧТО Я УЖЕ УМЕЮ — С ПРИМЕРОМ",
+      "section": "Куда именно я напишу"
+    },
+    {
+      "id": "d7-internship-org-name",
+      "page": 27,
+      "day": 7,
+      "type": "text",
+      "label": "Организация-цель",
+      "section": "Организация-цель"
+    },
+    {
+      "id": "d7-internship-org-why",
+      "page": 27,
+      "day": 7,
+      "type": "text",
+      "label": "Организация-цель",
+      "section": "Организация-цель"
+    },
+    {
+      "id": "d7-internship-org-contact",
+      "page": 27,
+      "day": 7,
+      "type": "text",
+      "label": "Организация-цель",
+      "section": "Организация-цель"
+    },
+    {
+      "id": "d7-letter-who",
+      "page": 27,
+      "day": 7,
+      "type": "textarea",
+      "label": "КТО Я · ОДНО ПРЕДЛОЖЕНИЕ",
+      "section": "Письмо: что в нём должно быть"
+    },
+    {
+      "id": "d7-letter-why-them",
+      "page": 27,
+      "day": 7,
+      "type": "textarea",
+      "label": "ПОЧЕМУ ИМЕННО ВЫ",
+      "section": "Письмо: что в нём должно быть"
+    },
+    {
+      "id": "d7-letter-value",
+      "page": 27,
+      "day": 7,
+      "type": "textarea",
+      "label": "ЧЕМ БУДУ ПОЛЕЗЕН",
+      "section": "Письмо: что в нём должно быть"
+    },
+    {
+      "id": "d7-letter-ask",
+      "page": 27,
+      "day": 7,
+      "type": "textarea",
+      "label": "ЧТО ПРОШУ · СКОЛЬКО НЕДЕЛЬ",
+      "section": "Письмо: что в нём должно быть"
+    },
+    {
+      "id": "d7-future-tuesday",
+      "page": 28,
+      "day": 7,
+      "type": "textarea",
+      "label": "МОЙ ВТОРНИК ЧЕРЕЗ ГОД",
+      "section": "Мечта — ближайший год"
+    },
+    {
+      "id": "d7-future-condition-1",
+      "page": 28,
+      "day": 7,
+      "type": "textarea",
+      "label": "01",
+      "section": "Что должно быть правдой, чтобы этот день случился"
+    },
+    {
+      "id": "d7-future-condition-2",
+      "page": 28,
+      "day": 7,
+      "type": "textarea",
+      "label": "02",
+      "section": "Что должно быть правдой, чтобы этот день случился"
+    },
+    {
+      "id": "d7-future-condition-3",
+      "page": 28,
+      "day": 7,
+      "type": "textarea",
+      "label": "03",
+      "section": "Что должно быть правдой, чтобы этот день случился"
+    },
+    {
+      "id": "d7-future-first-action",
+      "page": 28,
+      "day": 7,
+      "type": "text",
+      "label": "ОДНО ДЕЙСТВИЕ, КОТОРОЕ Я СДЕЛАЮ ПЕРВЫМ",
+      "section": "Что должно быть правдой, чтобы этот день случился"
+    },
+    {
+      "id": "d7-hackathon-today",
+      "page": 28,
+      "day": 7,
+      "type": "text",
+      "label": "ГДЕ Я УЖЕ НА ХАКАТОНЕ · ДЕНЬ 7",
+      "section": "Что должно быть правдой, чтобы этот день случился"
+    },
+    {
+      "id": "d7-hackathon-tomorrow",
+      "page": 28,
+      "day": 7,
+      "type": "text",
+      "label": "ГДЕ Я УЖЕ НА ХАКАТОНЕ · ДЕНЬ 7",
+      "section": "Что должно быть правдой, чтобы этот день случился"
+    },
+    {
+      "id": "d7-hackathon-owner",
+      "page": 28,
+      "day": 7,
+      "type": "text",
+      "label": "ГДЕ Я УЖЕ НА ХАКАТОНЕ · ДЕНЬ 7",
+      "section": "Что должно быть правдой, чтобы этот день случился"
+    },
+    {
+      "id": "d8-slide-problem-speaker",
+      "page": 29,
+      "day": 8,
+      "type": "text",
+      "label": "Кто что говорит",
+      "section": "Кто что говорит"
+    },
+    {
+      "id": "d8-slide-problem-phrase",
+      "page": 29,
+      "day": 8,
+      "type": "text",
+      "label": "Кто что говорит",
+      "section": "Кто что говорит"
+    },
+    {
+      "id": "d8-slide-data-speaker",
+      "page": 29,
+      "day": 8,
+      "type": "text",
+      "label": "Кто что говорит",
+      "section": "Кто что говорит"
+    },
+    {
+      "id": "d8-slide-data-phrase",
+      "page": 29,
+      "day": 8,
+      "type": "text",
+      "label": "Кто что говорит",
+      "section": "Кто что говорит"
+    },
+    {
+      "id": "d8-slide-solution-speaker",
+      "page": 29,
+      "day": 8,
+      "type": "text",
+      "label": "Кто что говорит",
+      "section": "Кто что говорит"
+    },
+    {
+      "id": "d8-slide-solution-phrase",
+      "page": 29,
+      "day": 8,
+      "type": "text",
+      "label": "Кто что говорит",
+      "section": "Кто что говорит"
+    },
+    {
+      "id": "d8-slide-how-speaker",
+      "page": 29,
+      "day": 8,
+      "type": "text",
+      "label": "Кто что говорит",
+      "section": "Кто что говорит"
+    },
+    {
+      "id": "d8-slide-how-phrase",
+      "page": 29,
+      "day": 8,
+      "type": "text",
+      "label": "Кто что говорит",
+      "section": "Кто что говорит"
+    },
+    {
+      "id": "d8-slide-needs-speaker",
+      "page": 29,
+      "day": 8,
+      "type": "text",
+      "label": "Кто что говорит",
+      "section": "Кто что говорит"
+    },
+    {
+      "id": "d8-slide-needs-phrase",
+      "page": 29,
+      "day": 8,
+      "type": "text",
+      "label": "Кто что говорит",
+      "section": "Кто что говорит"
+    },
+    {
+      "id": "d8-slide-first-step-speaker",
+      "page": 29,
+      "day": 8,
+      "type": "text",
+      "label": "Кто что говорит",
+      "section": "Кто что говорит"
+    },
+    {
+      "id": "d8-slide-first-step-phrase",
+      "page": 29,
+      "day": 8,
+      "type": "text",
+      "label": "Кто что говорит",
+      "section": "Кто что говорит"
+    },
+    {
+      "id": "d8-checklist-rehearsed",
+      "page": 29,
+      "day": 8,
+      "type": "checkbox",
+      "label": "Прогнали вслух с таймером хотя бы один раз",
+      "section": "Кто что говорит"
+    },
+    {
+      "id": "d8-checklist-file-ready",
+      "page": 29,
+      "day": 8,
+      "type": "checkbox",
+      "label": "Файл сдан и открывается с чужого устройства",
+      "section": "Кто что говорит"
+    },
+    {
+      "id": "d8-checklist-screenshots",
+      "page": 29,
+      "day": 8,
+      "type": "checkbox",
+      "label": "Есть скриншоты на случай, если интернет умрёт",
+      "section": "Кто что говорит"
+    },
+    {
+      "id": "d8-checklist-who-answers",
+      "page": 29,
+      "day": 8,
+      "type": "checkbox",
+      "label": "Договорились, кто отвечает на вопросы первым",
+      "section": "Кто что говорит"
+    },
+    {
+      "id": "d8-opening-line",
+      "page": 29,
+      "day": 8,
+      "type": "textarea",
+      "label": "ПЕРВАЯ ФРАЗА ЗАЩИТЫ · ЗАПИШИ ДОСЛОВНО",
+      "section": "Кто что говорит"
+    },
+    {
+      "id": "d9-jury-answer-data-source",
+      "page": 30,
+      "day": 9,
+      "type": "text",
+      "label": "Вопросы жюри",
+      "section": "Вопросы жюри"
+    },
+    {
+      "id": "d9-jury-answer-why-nobody-did",
+      "page": 30,
+      "day": 9,
+      "type": "text",
+      "label": "Вопросы жюри",
+      "section": "Вопросы жюри"
+    },
+    {
+      "id": "d9-jury-answer-cost",
+      "page": 30,
+      "day": 9,
+      "type": "text",
+      "label": "Вопросы жюри",
+      "section": "Вопросы жюри"
+    },
+    {
+      "id": "d9-jury-answer-first-monday",
+      "page": 30,
+      "day": 9,
+      "type": "text",
+      "label": "Вопросы жюри",
+      "section": "Вопросы жюри"
+    },
+    {
+      "id": "d9-what-worked-1",
+      "page": 30,
+      "day": 9,
+      "type": "text",
+      "label": "ЧТО СРАБОТАЛО",
+      "section": "После защиты · разбор по горячим следам"
+    },
+    {
+      "id": "d9-what-worked-2",
+      "page": 30,
+      "day": 9,
+      "type": "text",
+      "label": "ЧТО СРАБОТАЛО",
+      "section": "После защиты · разбор по горячим следам"
+    },
+    {
+      "id": "d9-what-worked-3",
+      "page": 30,
+      "day": 9,
+      "type": "text",
+      "label": "ЧТО СРАБОТАЛО",
+      "section": "После защиты · разбор по горячим следам"
+    },
+    {
+      "id": "d9-what-redo-1",
+      "page": 30,
+      "day": 9,
+      "type": "text",
+      "label": "ЧТО БЫ Я ПЕРЕДЕЛАЛ",
+      "section": "После защиты · разбор по горячим следам"
+    },
+    {
+      "id": "d9-what-redo-2",
+      "page": 30,
+      "day": 9,
+      "type": "text",
+      "label": "ЧТО БЫ Я ПЕРЕДЕЛАЛ",
+      "section": "После защиты · разбор по горячим следам"
+    },
+    {
+      "id": "d9-what-redo-3",
+      "page": 30,
+      "day": 9,
+      "type": "text",
+      "label": "ЧТО БЫ Я ПЕРЕДЕЛАЛ",
+      "section": "После защиты · разбор по горячим следам"
+    },
+    {
+      "id": "d9-proud",
+      "page": 30,
+      "day": 9,
+      "type": "textarea",
+      "label": "ЧЕМ Я ГОРЖУСЬ ПО ИТОГАМ ДВУХ НЕДЕЛЬ",
+      "section": "После защиты · разбор по горячим следам"
+    },
+    {
+      "id": "notes-canvas",
+      "page": 31,
+      "day": null,
+      "type": "canvas",
+      "label": null,
+      "section": null
+    }
+  ]
+}

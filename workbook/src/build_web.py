@@ -6,13 +6,43 @@
   - чекбоксы становятся настоящими
   - области для рисования получают <canvas>
   - добавлена навигация, масштабирование под экран и автосохранение
+
+Стабильные ID полей
+--------------------
+Раньше ключ каждого поля (data-f) собирался по ПОРЯДКУ на странице во время
+сборки (p{страница}f{номер}). Это ломалось при любой правке: добавил поле
+выше — все ключи ниже съехали, и сохранённые ответы приклеились не к тем
+вопросам.
+
+Теперь у каждого поля есть явный, человекочитаемый id, прописанный прямо
+в исходнике (parts/*.html):
+  - {{L n|id=база}}, {{LS n|id=база}}, {{LD n|id=база}} — n строк письма,
+    id получаются как "база-1".."база-n" (или просто "база", если n == 1)
+  - {{K подпись|id=id}} — одно поле с моноширинной подписью слева
+  - <div class="ck" data-id="id">...</div> — чекбокс
+  - <td data-id="id"></td> — пустая ячейка таблицы
+  - <div class="wbox dot ..." data-id="id">...</div> — область для рисования
+
+Сборка ПАДАЕТ с понятной ошибкой, если у поля нет id или id повторяется
+где-то ещё в тетради — так проще заметить опечатку, чем потом гадать,
+почему у два разных задания делят один ответ.
+
+На выходе, помимо ../index.html, пишется ../dist/manifest.json — список
+всех полей в порядке документа (id, страница, день курса, тип, подпись,
+раздел) с версией-хэшем. Он нужен бэкенду, который будет хранить ответы
+в Postgres по id поля вместо позиционного ключа.
 """
-import re, json, glob, os
+import re, json, glob, os, hashlib
 
 CSS = open('theme.css', encoding='utf-8').read()
 B = json.load(open('assets/b64.json'))
 LOGO = f"data:image/png;base64,{B['logo_web']}"
 ANCHORS = {}
+
+
+class BuildError(Exception):
+    """Ошибка сборки: отсутствующий/повторяющийся/некорректный id поля."""
+
 
 FONTS_LINK = (
     '<link rel="preconnect" href="https://fonts.googleapis.com">'
@@ -24,64 +54,226 @@ FONTS_LINK = (
     'family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">'
 )
 
+# ─────────────────────────────────────────── реестр id полей (для манифеста)
+ID_FORMAT = re.compile(r'[a-z0-9]+(?:-[a-z0-9]+)*')
+SEEN_IDS = {}          # id -> номер страницы, где он впервые встретился
+MANIFEST_FIELDS = []    # список полей в порядке документа
+
+TAG_RE = re.compile(r'<[^>]+>')
+LABEL_RE = re.compile(r'<div class="label">(.*?)</div>', re.S)
+TT_RE = re.compile(r'<span class="tt">(.*?)</span>', re.S)
+SEC_RE = re.compile(r'<div class="sec">(.*?)</div>', re.S)
+
+
+def strip_tags(s):
+    return re.sub(r'\s+', ' ', TAG_RE.sub('', s)).strip()
+
+
+def context_before(s, pos):
+    """Ближайшая предшествующая подпись (.label) и заголовок задания
+    (.tt из .task, либо .sec) — для label/section в манифесте.
+
+    Если найденный .label старше (стоит раньше), чем заголовок задания —
+    он относится к прошлому блоку (например, к плашке дня сверху страницы),
+    а не к текущему полю. В этом случае используем сам заголовок задания
+    как label — это ближе к «подписи к полю», чем случайно зацепленный
+    чужой .label."""
+    label, label_pos = None, -1
+    for m in LABEL_RE.finditer(s):
+        if m.start() >= pos:
+            break
+        label, label_pos = strip_tags(m.group(1)), m.start()
+    section, section_pos = None, -1
+    for rx in (TT_RE, SEC_RE):
+        for m in rx.finditer(s):
+            if m.start() >= pos:
+                break
+            if m.start() > section_pos:
+                section_pos = m.start()
+                section = strip_tags(m.group(1))
+    if label_pos < section_pos:
+        label = section
+    return label, section
+
+
+def validate_id(fid, page_no, what):
+    if not fid:
+        raise BuildError(f"страница {page_no}: у {what} нет id (используй |id=... или data-id=\"...\")")
+    if not ID_FORMAT.fullmatch(fid):
+        raise BuildError(
+            f"страница {page_no}: id '{fid}' ({what}) должен быть ascii kebab-case "
+            f"(латиница, цифры, дефис, без дефиса в начале/конце)"
+        )
+
+
+def register(fid, page_no, day, ftype, label, section):
+    if fid in SEEN_IDS:
+        raise BuildError(
+            f"страница {page_no}: id '{fid}' уже используется на странице {SEEN_IDS[fid]} "
+            f"— id должен быть уникален по всей тетради"
+        )
+    SEEN_IDS[fid] = page_no
+    MANIFEST_FIELDS.append({
+        'id': fid, 'page': page_no, 'day': day,
+        'type': ftype, 'label': label, 'section': section,
+    })
+
+
+def require_data_id(attrs, page_no, what):
+    m = re.search(r'data-id="([^"]*)"', attrs or '')
+    fid = m.group(1) if m else None
+    validate_id(fid, page_no, what)
+    return fid
+
+
+def strip_data_id(attrs):
+    return re.sub(r'\s*data-id="[^"]*"', '', attrs or '')
+
+
+# ─────────────────────────────────────────── извлечение полей в порядке документа
+def extract_manifest(raw, page_no, day):
+    """Сканирует ИСХОДНОЕ (домакросное) содержимое страницы, находит все
+    поля в порядке появления в документе, проверяет id и складывает
+    записи в MANIFEST_FIELDS. Бросает BuildError на первой проблеме."""
+    found = []
+    for m in re.finditer(r'\{\{(L|LS|LD)\s+(\d+)(?:\|id=([^|}]*))?(\|ta)?\}\}', raw):
+        found.append((m.start(), 'L', m))
+    for m in re.finditer(r'\{\{K\s+(.*?)(?:\|id=([^}]*))?\}\}', raw):
+        found.append((m.start(), 'K', m))
+    for m in re.finditer(r'<div class="ck"([^>]*)>(.*?)</div>', raw, re.S):
+        found.append((m.start(), 'CK', m))
+    for m in re.finditer(r'<td([^>]*)>\s*</td>', raw):
+        found.append((m.start(), 'TD', m))
+    for m in re.finditer(r'<div class="(wbox dot[^"]*)"([^>]*)>(.*?)</div>\s*(?=<|$)', raw, re.S):
+        found.append((m.start(), 'WBOX', m))
+    found.sort(key=lambda t: t[0])
+
+    for pos, kind, m in found:
+        label, section = context_before(raw, pos)
+        if kind == 'L':
+            n, fid, ta = int(m.group(2)), m.group(3), m.group(4)
+            validate_id(fid, page_no, f'{{{{{m.group(1)} {n}}}}}')
+            if ta and n >= 2:
+                # Группа строк — один связный ответ (не список отдельных
+                # пунктов): в вебе это один растущий textarea на весь fid,
+                # без суффиксов -1..-n. См. |ta в macros().
+                register(fid, page_no, day, 'textarea', label, section)
+            else:
+                for i in range(1, n + 1):
+                    sub_id = fid if n == 1 else f'{fid}-{i}'
+                    register(sub_id, page_no, day, 'text', label, section)
+        elif kind == 'K':
+            text, fid = m.group(1), m.group(2)
+            validate_id(fid, page_no, f'{{{{K {text}}}}}')
+            register(fid, page_no, day, 'text', text.strip(), section)
+        elif kind == 'CK':
+            attrs, inner = m.group(1), m.group(2)
+            fid = require_data_id(attrs, page_no, 'чекбокса (div.ck)')
+            register(fid, page_no, day, 'checkbox', strip_tags(inner), section)
+        elif kind == 'TD':
+            attrs = m.group(1) or ''
+            fid = require_data_id(attrs, page_no, 'пустой ячейки таблицы (td)')
+            register(fid, page_no, day, 'text', label, section)
+        elif kind == 'WBOX':
+            attrs = m.group(2)
+            fid = require_data_id(attrs, page_no, 'области для рисования (wbox dot)')
+            register(fid, page_no, day, 'canvas', label, section)
+
+
 # ─────────────────────────────────────────── макросы (как в печатной версии)
-def macros(s):
+def macros(s, page_no):
     def rep(m):
-        kind, n = m.group(1), int(m.group(2))
+        kind, n, fid, ta = m.group(1), int(m.group(2)), m.group(3), m.group(4)
+        validate_id(fid, page_no, f'{{{{{kind} {n}}}}}')
+        if ta and n >= 2:
+            cls = {'L': 'wlta', 'LS': 'wlta s', 'LD': 'wlta d'}[kind]
+            return f'<div class="{cls}" data-id="{fid}" data-lines="{n}"></div>'
         cls = {'L': 'wl', 'LS': 'wl s', 'LD': 'wl d'}[kind]
-        return ''.join(f'<div class="{cls}"></div>' for _ in range(n))
-    s = re.sub(r'\{\{(L|LS|LD)\s+(\d+)\}\}', rep, s)
-    s = re.sub(r'\{\{K\s+(.*?)\}\}',
-               lambda m: f'<div class="wlbl"><span class="k">{m.group(1)}</span></div>', s)
+        parts = []
+        for i in range(1, n + 1):
+            sub_id = fid if n == 1 else f'{fid}-{i}'
+            parts.append(f'<div class="{cls}" data-id="{sub_id}"></div>')
+        return ''.join(parts)
+    s = re.sub(r'\{\{(L|LS|LD)\s+(\d+)(?:\|id=([^|}]*))?(\|ta)?\}\}', rep, s)
+    s = re.sub(r'\{\{K\s+(.*?)(?:\|id=([^}]*))?\}\}',
+               lambda m: f'<div class="wlbl" data-id="{m.group(2)}"><span class="k">{m.group(1)}</span></div>', s)
     return s.replace('{{LOGO}}', LOGO)
 
 
 # ─────────────────────────────────────────── превращение в интерактив
 def interactive(html, page_no):
-    """Заменяет статичные поля на рабочие элементы формы."""
-    counter = {'i': 0}
+    """Заменяет статичные поля на рабочие элементы формы. Id уже
+    проверены в extract_manifest() — здесь просто переносим их в data-f."""
 
-    def fid():
-        counter['i'] += 1
-        return f"p{page_no}f{counter['i']}"
+    # группы строк для одного связного ответа -> один растущий textarea
+    def wlta_rep(m):
+        cls, fid, n = m.group(1), m.group(2), int(m.group(3))
+        line_mm = 7.5 if cls.endswith(' s') else 9
+        min_h = round(n * line_mm, 1)
+        return (f'<textarea class="{cls}" data-f="{fid}" data-lines="{n}" '
+                f'rows="{n}" style="min-height:{min_h}mm"></textarea>')
+    html = re.sub(r'<div class="(wlta(?:\s+[sd])?)" data-id="([^"]+)" data-lines="(\d+)"></div>',
+                  wlta_rep, html)
 
     # линейки для письма -> текстовые поля
     def wl_rep(m):
-        cls = m.group(1)
-        return f'<input class="{cls}" type="text" data-f="{fid()}" autocomplete="off">'
-    html = re.sub(r'<div class="(wl(?:\s+[sd])?)"></div>', wl_rep, html)
+        cls, fid = m.group(1), m.group(2)
+        return f'<input class="{cls}" type="text" data-f="{fid}" autocomplete="off">'
+    html = re.sub(r'<div class="(wl(?:\s+[sd])?)" data-id="([^"]+)"></div>', wl_rep, html)
 
     # поле с моноширинной подписью слева
     def wlbl_rep(m):
-        label = m.group(1)
+        fid, label = m.group(1), m.group(2)
         return (f'<div class="wlbl"><span class="k">{label}</span>'
-                f'<input class="wlbl-in" type="text" data-f="{fid()}" autocomplete="off"></div>')
-    html = re.sub(r'<div class="wlbl"><span class="k">(.*?)</span></div>', wlbl_rep, html)
+                f'<input class="wlbl-in" type="text" data-f="{fid}" autocomplete="off"></div>')
+    html = re.sub(r'<div class="wlbl" data-id="([^"]+)"><span class="k">(.*?)</span></div>', wlbl_rep, html)
 
     # чекбоксы
     def ck_rep(m):
         attrs, inner = m.group(1), m.group(2)
-        return (f'<label class="ck"{attrs}><input type="checkbox" data-f="{fid()}">'
+        fid = require_data_id(attrs, page_no, 'чекбокса (div.ck)')
+        attrs_clean = strip_data_id(attrs)
+        return (f'<label class="ck"{attrs_clean}><input type="checkbox" data-f="{fid}">'
                 f'<span class="ck-box"></span>{inner}</label>')
     html = re.sub(r'<div class="ck"(.*?)>(.*?)</div>', ck_rep, html, flags=re.S)
 
     # пустые ячейки таблиц -> поля ввода
     def td_rep(m):
         attrs = m.group(1) or ''
-        return f'<td{attrs}><input class="td-in" type="text" data-f="{fid()}" autocomplete="off"></td>'
+        fid = require_data_id(attrs, page_no, 'пустой ячейки таблицы (td)')
+        attrs_clean = strip_data_id(attrs)
+        return f'<td{attrs_clean}><input class="td-in" type="text" data-f="{fid}" autocomplete="off"></td>'
     html = re.sub(r'<td([^>]*)>\s*</td>', td_rep, html)
 
     # области для рисования -> холст (любые классы, с содержимым и без)
+    CANVAS_TOOLS = (
+        '<div class="canvas-tools">'
+        '<button class="ctool" type="button" data-act="thin" title="Тонкая линия">•</button>'
+        '<button class="ctool" type="button" data-act="medium" title="Средняя линия">●</button>'
+        '<button class="ctool" type="button" data-act="thick" title="Толстая линия">⬤</button>'
+        '<button class="ctool" type="button" data-act="eraser" title="Ластик">🩹</button>'
+        '<button class="ctool" type="button" data-act="undo" title="Отменить штрих">↶</button>'
+        '<button class="ctool" type="button" data-act="clear" title="Стереть всё">✕</button>'
+        '</div>'
+    )
+
     def canvas_rep(m):
         cls, attrs, inner = m.group(1), m.group(2), m.group(3)
-        return (f'<div class="{cls} canvas-wrap"{attrs}>'
-                f'<canvas data-f="{fid()}"></canvas>'
+        fid = require_data_id(attrs, page_no, 'области для рисования (wbox dot)')
+        attrs_clean = strip_data_id(attrs)
+        return (f'<div class="{cls} canvas-wrap"{attrs_clean}>'
+                f'<canvas data-f="{fid}"></canvas>'
                 f'<div class="canvas-over">{inner}</div>'
-                f'<button class="canvas-clear" type="button">Стереть</button></div>')
+                f'{CANVAS_TOOLS}</div>')
     html = re.sub(r'<div class="(wbox dot[^"]*)"([^>]*)>(.*?)</div>\s*(?=<|$)',
                   canvas_rep, html, flags=re.S)
 
     return html
+
+
+# ─────────────────────────────────────────── день курса по странице
+DAY_HR_RE = re.compile(r'ДЕНЬ\s+(\d+)')
+ANCHOR_DAY_RE = re.compile(r'^d(\d+)$')
 
 
 # ─────────────────────────────────────────── сборка страниц
@@ -91,21 +283,39 @@ def build_pages():
     chunks = re.split(r'<!--PAGE(.*?)-->', raw)[1:]
     pages, nav, n = [], [], 0
     total = len(chunks) // 2
+    current_day = None
     for i in range(0, len(chunks), 2):
         attrs, content = chunks[i], chunks[i + 1]
         get = lambda k: (re.search(k + r'="(.*?)"', attrs).group(1)
                          if re.search(k + r'="(.*?)"', attrs) else '')
         cls, hl, hr, fl, anchor = get('class'), get('hl'), get('hr'), get('fl'), get('anchor')
         n += 1
+
+        m = ANCHOR_DAY_RE.match(anchor) if anchor else None
+        if m:
+            current_day = int(m.group(1))
+        m = DAY_HR_RE.search(hr)
+        if m:
+            current_day = int(m.group(1))
+        is_generic = ('cover' in cls.split()) or (hl == 'ЗАМЕТКИ')
+        day = None if is_generic else current_day
+
         if anchor:
             ANCHORS[anchor] = f'{n:02d}'
             nav.append((n, hr or hl or anchor))
+
+        extract_manifest(content, n, day)
+
         head = f'<div class="hd"><span>{hl}</span><span class="r">{hr}</span></div>' if hl or hr else ''
         foot = (f'<div class="ft"><span>{fl or "PRIMETEENS · РАБОЧАЯ ТЕТРАДЬ"}</span>'
                 f'<span>{n:02d} / {total:02d}</span></div>') if 'nofoot' not in cls else ''
-        body = interactive(macros(content), n)
+        body = interactive(macros(content, n), n)
+        # На узких экранах таблицы не сжимаются в колонку — им нужна
+        # собственная горизонтальная прокрутка (см. .tbl-scroll в WEB_CSS).
+        body = re.sub(r'(<table\b[^>]*>.*?</table>)', r'<div class="tbl-scroll">\1</div>', body, flags=re.S)
+        day_attr = f' data-day="{day}"' if day is not None else ''
         pages.append(
-            f'<section class="page {cls}" id="page-{n}" data-page="{n}">'
+            f'<section class="page {cls}" id="page-{n}" data-page="{n}"{day_attr}>'
             f'{head}<div class="body">{body}</div>{foot}</section>'
         )
     return '\n'.join(pages), n, nav
@@ -155,30 +365,238 @@ label.ck input:checked + .ck-box{ background:var(--blue); }
 label.ck input:checked + .ck-box::after{ content:'✓'; position:absolute; inset:0;
   color:#fff; font-size:2.8mm; line-height:3.8mm; text-align:center; }
 
+/* один связный ответ на несколько строк -> растущий textarea */
+textarea.wlta{ width:100%; display:block; background:transparent; border:0;
+  border-bottom:.9pt solid var(--line-s); border-radius:0; padding:1mm 1mm 1mm 0;
+  font-family:'Inter',sans-serif; font-size:9.6pt; line-height:1.55; color:#123;
+  outline:none; resize:none; overflow:hidden; }
+textarea.wlta.s{ font-size:9.4pt; }
+textarea.wlta.d{ border-bottom-style:dashed; }
+textarea.wlta:focus{ background:#FFF8E8; }
+
+/* широкие таблицы на узком экране получают свою горизонтальную прокрутку */
+.tbl-scroll{ width:100%; }
+
 /* холст для рисования */
 .canvas-wrap{ position:relative; }
 .canvas-wrap canvas{ position:absolute; inset:0; width:100%; height:100%;
   cursor:crosshair; touch-action:none; z-index:1; }
 .canvas-over{ position:absolute; inset:0; z-index:2; pointer-events:none; }
-.canvas-clear{ position:absolute; right:3mm; bottom:3mm; z-index:3; font-size:11px;
-  border:0; background:rgba(18,50,79,.8); color:#fff; border-radius:6px;
-  padding:4px 9px; cursor:pointer; font-family:'Inter',sans-serif; }
-.canvas-clear:hover{ background:#12324F; }
+.canvas-tools{ position:absolute; right:3mm; bottom:3mm; z-index:3; display:flex; gap:2px;
+  background:rgba(18,50,79,.85); border-radius:8px; padding:3px; }
+.canvas-tools .ctool{ border:0; background:transparent; color:#fff; font-size:13px; line-height:1;
+  cursor:pointer; border-radius:6px; padding:6px 8px; font-family:'Inter',sans-serif; }
+.canvas-tools .ctool:hover{ background:rgba(255,255,255,.18); }
+.canvas-tools .ctool.active{ background:var(--orange); }
 
 /* печать: возвращаем ровно печатный вид */
 @media print{
-  .topbar, .canvas-clear{ display:none !important; }
+  .topbar, .canvas-tools{ display:none !important; }
   body{ background:#fff; }
   .stage{ padding:0; gap:0; }
   .page{ box-shadow:none; zoom:1 !important; }
   input.wl, input.wlbl-in, input.td-in{ background:transparent !important; }
 }
+
+/* ============ ТЕЛЕФОН (< 768px): снимаем A4-масштаб, одна колонка ============ */
+@media (max-width:767px){
+  html{ -webkit-text-size-adjust:100%; }
+  body{ font-size:16px; }
+
+  .topbar{ flex-wrap:wrap; gap:8px; padding:8px 10px; }
+  .topbar button, .topbar select{ min-height:40px; font-size:14px; padding:9px 12px; }
+  .topbar .brand{ font-size:14px; }
+  .topbar .counter{ font-size:12px; }
+
+  .stage{ padding:10px 8px 40px; gap:12px; }
+
+  /* снимаем "бумажный" A4-чехол постранично: ширина/высота, тень, обрезка */
+  .page{ width:100% !important; max-width:100% !important; height:auto !important;
+    min-height:0 !important; box-shadow:none !important; border-radius:10px;
+    overflow:visible !important; padding:14px !important; zoom:1 !important; }
+  .page .hd, .page .ft{ position:static !important; margin:0 0 10px; }
+  .page .ft{ margin:12px 0 0; }
+  .page .body{ margin-top:10px !important; overflow:visible !important; min-height:0 !important; }
+  .page.cover .body{ height:auto !important; }
+
+  /* верстка заданий использует фиксированные mm-размеры под A4 — на телефоне
+     всё, что не таблица (у таблиц своя горизонтальная прокрутка), сжимается
+     в ширину контейнера вместо горизонтального выпирания за край страницы */
+  .page :not(table):not(table *){ max-width:100% !important; }
+
+  .grid2, .grid3, .grid4{ grid-template-columns:1fr !important; }
+  .row{ flex-direction:column; }
+
+  p, .lead, .tiny, .bul, .kv, .kv span, .task .tt, .task .hint, .ck span{
+    font-size:16px !important; line-height:1.5 !important; }
+  h1{ font-size:24px !important; }
+  h2{ font-size:18px !important; }
+  .label, .mono, .tstep, .chip{ font-size:11px !important; }
+
+  input.wl, input.wl.s, input.wl.d, input.wlbl-in, input.td-in, textarea.wlta{
+    font-size:16px !important; height:auto !important; min-height:40px !important;
+    padding:9px 2px !important; }
+  textarea.wlta{ min-height:84px !important; }
+
+  .wbox, .canvas-wrap{ width:100% !important; height:auto !important; aspect-ratio:4/3; }
+
+  label.ck{ min-height:40px; display:flex; align-items:center; gap:3mm; margin-bottom:6px; }
+  .ck-box{ width:22px; height:22px; }
+  label.ck input:checked + .ck-box::after{ font-size:15px; line-height:22px; }
+
+  .tbl-scroll{ overflow-x:auto; -webkit-overflow-scrolling:touch; margin:0 -14px; padding:0 14px; }
+  .tbl-scroll table{ min-width:560px; font-size:14px; }
+
+  .canvas-tools .ctool{ min-width:40px; min-height:40px; font-size:15px; }
+}
 """
 
-WEB_JS = """
+CANVAS_CORE_JS = """
+/* ============ Общий движок холста: штрихи, отмена, кисть, ластик =========
+ * Используется и в автономной версии (localStorage), и в платформенной
+ * (API) — отличается только тем, откуда берётся исходное изображение и
+ * куда уходит результат (см. opts.loadSrc / opts.onSave).
+ *
+ * История штрихов живёт только в памяти вкладки: отмена штриха работает,
+ * пока страницу не перезагрузили — на сервере/в localStorage по-прежнему
+ * хранится один PNG-растр на холст, без вектора. Это осознанное упрощение:
+ * бэкенд для векторных слоёв не заказывали, а поверх PNG "вечная" история
+ * отмены не реализуема без смены формата хранения.
+ */
+function wbSetupCanvas(cv, opts){
+  var wrap = cv.parentElement;
+  var readonly = !!opts.readonly;
+  var ctx = cv.getContext('2d');
+  var strokes = [];
+  var current = null;
+  var baseImg = null;
+  var tool = { size: 3.2, erase: false };
+
+  function sizeCanvas(){
+    var r = wrap.getBoundingClientRect();
+    var dpr = Math.max(1, window.devicePixelRatio || 1);
+    cv.width = Math.max(1, Math.round(r.width * dpr));
+    cv.height = Math.max(1, Math.round(r.height * dpr));
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    return r;
+  }
+
+  function drawStroke(s){
+    if(!s.points.length) return;
+    ctx.save();
+    ctx.globalCompositeOperation = s.erase ? 'destination-out' : 'source-over';
+    ctx.strokeStyle = '#1B3A5C';
+    ctx.lineWidth = s.size;
+    ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+    ctx.beginPath();
+    ctx.moveTo(s.points[0][0], s.points[0][1]);
+    for(var i = 1; i < s.points.length; i++) ctx.lineTo(s.points[i][0], s.points[i][1]);
+    if(s.points.length === 1) ctx.lineTo(s.points[0][0] + 0.01, s.points[0][1] + 0.01);
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  function renderAll(){
+    var r = wrap.getBoundingClientRect();
+    ctx.clearRect(0, 0, r.width, r.height);
+    if(baseImg){ try { ctx.drawImage(baseImg, 0, 0, r.width, r.height); } catch(e){} }
+    strokes.forEach(drawStroke);
+  }
+
+  function loadBase(src){
+    if(!src){ baseImg = null; renderAll(); return; }
+    var img = new Image();
+    img.onload = function(){ baseImg = img; renderAll(); };
+    img.onerror = function(){ baseImg = null; renderAll(); };
+    img.src = src;
+  }
+
+  setTimeout(function(){
+    sizeCanvas();
+    opts.loadSrc(loadBase);
+  }, 60);
+
+  var resizeTimer = null;
+  window.addEventListener('resize', function(){
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(function(){ sizeCanvas(); renderAll(); }, 200);
+  });
+  window.addEventListener('orientationchange', function(){
+    setTimeout(function(){ sizeCanvas(); renderAll(); }, 250);
+  });
+
+  function pos(e){
+    var r = wrap.getBoundingClientRect();
+    return [e.clientX - r.left, e.clientY - r.top];
+  }
+  function persist(){ if(opts.onSave) opts.onSave(cv); }
+
+  if(!readonly){
+    cv.addEventListener('pointerdown', function(e){
+      current = { erase: tool.erase, size: tool.size, points: [pos(e)] };
+      strokes.push(current);
+      try { cv.setPointerCapture(e.pointerId); } catch(err){}
+      renderAll();
+    });
+    cv.addEventListener('pointermove', function(e){
+      if(!current) return;
+      current.points.push(pos(e));
+      renderAll();
+    });
+    function endStroke(){
+      if(!current) return;
+      current = null;
+      persist();
+    }
+    cv.addEventListener('pointerup', endStroke);
+    cv.addEventListener('pointercancel', endStroke);
+    cv.addEventListener('pointerleave', function(){ if(current) endStroke(); });
+
+    var tools = wrap.querySelector('.canvas-tools');
+    if(tools){
+      var sizeMap = { thin: 1.6, medium: 3.2, thick: 6 };
+      function markActive(act){
+        tools.querySelectorAll('.ctool').forEach(function(b){
+          var a = b.getAttribute('data-act');
+          if(a === 'undo' || a === 'clear') return;
+          var isOn = a === 'eraser' ? tool.erase : (!tool.erase && sizeMap[a] === tool.size);
+          b.classList.toggle('active', isOn);
+        });
+      }
+      tools.querySelectorAll('.ctool').forEach(function(btn){
+        btn.addEventListener('click', function(){
+          var act = btn.getAttribute('data-act');
+          if(act === 'thin' || act === 'medium' || act === 'thick'){
+            tool.size = sizeMap[act]; tool.erase = false;
+          } else if(act === 'eraser'){
+            tool.erase = !tool.erase;
+          } else if(act === 'undo'){
+            if(strokes.length){ strokes.pop(); renderAll(); persist(); }
+          } else if(act === 'clear'){
+            if(!confirm('Стереть весь рисунок? Это нельзя отменить.')) return;
+            strokes = []; baseImg = null; renderAll(); persist();
+          }
+          markActive(act);
+        });
+      });
+      markActive('medium');
+    }
+  } else {
+    var toolsRo = wrap.querySelector('.canvas-tools');
+    if(toolsRo) toolsRo.style.display = 'none';
+    cv.style.pointerEvents = 'none';
+  }
+
+  return {
+    setBaseSrc: function(src){ loadBase(src); }
+  };
+}
+"""
+
+WEB_JS = CANVAS_CORE_JS + """
 /* ============ Масштаб, навигация, автосохранение ============ */
 (function(){
-  var KEY = 'primeteens-workbook-v3';
+  var KEY = 'primeteens-workbook-v4';
   var store = {};
   try { store = JSON.parse(localStorage.getItem(KEY) || '{}'); } catch(e){ store = {}; }
 
@@ -191,7 +609,13 @@ WEB_JS = """
       saveTimer = setTimeout(function(){ savedTag.classList.remove('on'); }, 1200); }
   }
 
-  /* --- текстовые поля и чекбоксы --- */
+  /* --- автоподгонка высоты textarea под содержимое --- */
+  function autosize(el){
+    el.style.height = 'auto';
+    el.style.height = el.scrollHeight + 'px';
+  }
+
+  /* --- текстовые поля, textarea и чекбоксы --- */
   document.querySelectorAll('[data-f]').forEach(function(el){
     var k = el.getAttribute('data-f');
     if(el.tagName === 'INPUT' && el.type === 'checkbox'){
@@ -200,49 +624,35 @@ WEB_JS = """
     } else if(el.tagName === 'INPUT'){
       if(store[k]) el.value = store[k];
       el.addEventListener('input', function(){ store[k] = el.value; save(); });
+    } else if(el.tagName === 'TEXTAREA'){
+      if(store[k]) el.value = store[k];
+      autosize(el);
+      el.addEventListener('input', function(){ store[k] = el.value; autosize(el); save(); });
+      window.addEventListener('resize', function(){ autosize(el); });
     }
   });
 
   /* --- холсты для рисования --- */
   document.querySelectorAll('canvas[data-f]').forEach(function(cv){
     var k = cv.getAttribute('data-f');
-    var wrap = cv.parentElement;
-    function fit(){
-      var r = wrap.getBoundingClientRect();
-      var data = cv.toDataURL && cv.width ? cv.toDataURL() : null;
-      cv.width = Math.max(1, Math.round(r.width * 2));
-      cv.height = Math.max(1, Math.round(r.height * 2));
-      var ctx = cv.getContext('2d');
-      ctx.scale(2,2); ctx.lineWidth = 1.6; ctx.lineCap='round'; ctx.lineJoin='round';
-      ctx.strokeStyle = '#1B3A5C';
-      var src = store[k] || data;
-      if(src){ var img = new Image(); img.onload = function(){
-        ctx.drawImage(img, 0, 0, r.width, r.height); }; img.src = src; }
-    }
-    setTimeout(fit, 60);
-    window.addEventListener('resize', function(){ clearTimeout(cv._t); cv._t = setTimeout(fit, 250); });
-
-    var drawing = false, ctx = cv.getContext('2d');
-    function pos(e){ var r = cv.getBoundingClientRect();
-      return { x:(e.clientX - r.left), y:(e.clientY - r.top) }; }
-    cv.addEventListener('pointerdown', function(e){
-      drawing = true; cv.setPointerCapture(e.pointerId);
-      var p = pos(e); ctx.beginPath(); ctx.moveTo(p.x, p.y); });
-    cv.addEventListener('pointermove', function(e){
-      if(!drawing) return; var p = pos(e); ctx.lineTo(p.x, p.y); ctx.stroke(); });
-    function stop(){ if(!drawing) return; drawing = false;
-      try { store[k] = cv.toDataURL('image/png'); save(); } catch(e){} }
-    cv.addEventListener('pointerup', stop);
-    cv.addEventListener('pointerleave', stop);
-
-    var btn = wrap.querySelector('.canvas-clear');
-    if(btn) btn.addEventListener('click', function(){
-      ctx.clearRect(0,0,cv.width,cv.height); delete store[k]; save(); });
+    wbSetupCanvas(cv, {
+      readonly: false,
+      loadSrc: function(cb){ cb(store[k] || null); },
+      onSave: function(canvasEl){
+        try { store[k] = canvasEl.toDataURL('image/png'); save(); } catch(e){}
+      }
+    });
   });
 
-  /* --- масштаб страниц под ширину экрана (zoom меняет и высоту) --- */
+  /* --- масштаб страниц под ширину экрана (zoom меняет и высоту); на
+     телефоне (< 768px) масштаб снят вовсе — раскладка идёт в одну колонку
+     через CSS-медиазапрос, см. WEB_CSS --- */
   var MM = 210 * 96 / 25.4; // ширина A4 в px при 96dpi
   function scale(){
+    if(window.innerWidth < 768){
+      document.querySelectorAll('.page').forEach(function(p){ p.style.zoom = ''; });
+      return;
+    }
     var avail = Math.min(document.querySelector('.stage').clientWidth - 16, 1000);
     var s = Math.min(1, avail / MM);
     document.querySelectorAll('.page').forEach(function(p){ p.style.zoom = s; });
@@ -278,8 +688,229 @@ WEB_JS = """
 """
 
 
+PLATFORM_CSS = """
+/* ============ ПЛАТФОРМЕННЫЙ СЛОЙ (поверх WEB_CSS) ============ */
+.topbar .netstatus{ font-size:12px; color:#ffcf7a; opacity:0; transition:opacity .25s; }
+.topbar .netstatus.on{ opacity:1; }
+input.wl:disabled, input.wlbl-in:disabled, input.td-in:disabled, textarea.wlta:disabled,
+label.ck input:disabled + .ck-box{ opacity:.85; cursor:default; }
+@keyframes wbFlash{
+  0%{ box-shadow:0 0 0 3px rgba(201,162,75,.95); }
+  100%{ box-shadow:0 0 0 3px rgba(201,162,75,0); }
+}
+.wb-flash{ animation: wbFlash 1.4s ease-out; border-radius:3px; }
+"""
+
+# Клиентский слой для платформы: вместо localStorage читает/пишет через API
+# хоста (см. workbook/README раздел "платформа"). Конфиг приходит через
+# window.__WB__ = {mode:"edit"|"readonly", studentId, apiBase}, который
+# инжектит серверный route handler перед этим скриптом (см.
+# app/workbook/frame/route.ts в основном Next.js приложении) — так cookies
+# сессии остаются same-origin и для этой страницы, и для fetch-запросов к API.
+PLATFORM_JS = CANVAS_CORE_JS + """
+(function(){
+  var WB = window.__WB__ || {};
+  var API = WB.apiBase || '/api/workbook';
+  var studentId = WB.studentId;
+  var readonly = WB.mode !== 'edit';
+  if(!studentId) return;
+
+  var savedTag = document.querySelector('.saved');
+  var netTag = document.querySelector('.netstatus');
+  function flashSaved(){
+    if(!savedTag) return;
+    savedTag.classList.add('on');
+    clearTimeout(flashSaved._t);
+    flashSaved._t = setTimeout(function(){ savedTag.classList.remove('on'); }, 1200);
+  }
+  function setNet(ok){ if(netTag) netTag.classList.toggle('on', !ok); }
+  function highlight(el){
+    if(!el) return;
+    el.classList.remove('wb-flash'); void el.offsetWidth;
+    el.classList.add('wb-flash');
+    setTimeout(function(){ el.classList.remove('wb-flash'); }, 1500);
+  }
+
+  var pending = {}, timers = {}, failed = {}, retryTimer = null;
+
+  function scheduleSave(fieldId, value, delay){
+    pending[fieldId] = value;
+    clearTimeout(timers[fieldId]);
+    timers[fieldId] = setTimeout(function(){ flushField(fieldId); }, delay);
+  }
+  function flushField(fieldId){
+    if(!(fieldId in pending)) return;
+    var value = pending[fieldId];
+    delete pending[fieldId];
+    fetch(API + '/' + studentId + '/entries/' + encodeURIComponent(fieldId), {
+      method: 'PUT', credentials: 'same-origin',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({value: value})
+    }).then(function(r){
+      if(!r.ok) throw new Error('status ' + r.status);
+      delete failed[fieldId]; setNet(true); flashSaved();
+    }).catch(function(){
+      failed[fieldId] = value; setNet(false); scheduleRetry();
+    });
+  }
+  function scheduleRetry(){
+    if(retryTimer) return;
+    retryTimer = setTimeout(function(){
+      retryTimer = null;
+      var ids = Object.keys(failed);
+      if(!ids.length){ setNet(true); return; }
+      ids.forEach(function(id){ var v = failed[id]; delete failed[id]; pending[id] = v; flushField(id); });
+    }, 3000);
+  }
+
+  function autosize(el){
+    el.style.height = 'auto';
+    el.style.height = el.scrollHeight + 'px';
+  }
+
+  if(!readonly){
+    document.querySelectorAll('[data-f]').forEach(function(el){
+      var k = el.getAttribute('data-f');
+      if(el.tagName === 'INPUT' && el.type === 'checkbox'){
+        el.addEventListener('change', function(){ scheduleSave(k, el.checked, 50); });
+      } else if(el.tagName === 'INPUT'){
+        el.addEventListener('input', function(){ scheduleSave(k, el.value, 800); });
+      } else if(el.tagName === 'TEXTAREA'){
+        autosize(el);
+        el.addEventListener('input', function(){ scheduleSave(k, el.value, 800); autosize(el); });
+        window.addEventListener('resize', function(){ autosize(el); });
+      }
+    });
+  } else {
+    document.querySelectorAll('[data-f]').forEach(function(el){
+      if(el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') el.disabled = true;
+    });
+  }
+
+  var canvasTimers = {};
+  function scheduleCanvasSave(fieldId, cv){
+    clearTimeout(canvasTimers[fieldId]);
+    canvasTimers[fieldId] = setTimeout(function(){ flushCanvas(fieldId, cv); }, 1500);
+  }
+  function flushCanvas(fieldId, cv){
+    cv.toBlob(function(blob){
+      if(!blob) return;
+      fetch(API + '/' + studentId + '/drawings/' + encodeURIComponent(fieldId), {
+        method: 'PUT', credentials: 'same-origin',
+        headers: {'Content-Type':'image/png'}, body: blob
+      }).then(function(r){
+        if(!r.ok) throw new Error('status ' + r.status);
+        setNet(true); flashSaved();
+      }).catch(function(){ setNet(false); });
+    }, 'image/png');
+  }
+
+  var canvasHandles = {};
+  document.querySelectorAll('canvas[data-f]').forEach(function(cv){
+    var k = cv.getAttribute('data-f');
+    var url = API + '/' + studentId + '/drawings/' + encodeURIComponent(k);
+    canvasHandles[k] = wbSetupCanvas(cv, {
+      readonly: readonly,
+      loadSrc: function(cb){ cb(url + '?t=' + Date.now()); },
+      onSave: function(canvasEl){ scheduleCanvasSave(k, canvasEl); }
+    });
+  });
+
+  fetch(API + '/' + studentId + '/entries', {credentials:'same-origin'})
+    .then(function(r){ return r.ok ? r.json() : null; })
+    .then(function(data){
+      if(!data) return;
+      var entries = data.entries || {};
+      document.querySelectorAll('[data-f]').forEach(function(el){
+        var k = el.getAttribute('data-f');
+        if(!(k in entries)) return;
+        if(el.tagName === 'INPUT' && el.type === 'checkbox'){ el.checked = !!entries[k]; }
+        else if(el.tagName === 'INPUT'){ el.value = entries[k] || ''; }
+        else if(el.tagName === 'TEXTAREA'){ el.value = entries[k] || ''; autosize(el); }
+      });
+    })
+    .catch(function(){ setNet(false); });
+
+  if(readonly && window.EventSource){
+    var es = new EventSource(API + '/' + studentId + '/stream');
+    es.addEventListener('entry', function(e){
+      try {
+        var msg = JSON.parse(e.data);
+        var el = document.querySelector('[data-f="' + msg.fieldId + '"]');
+        if(!el) return;
+        if(el.tagName === 'INPUT' && el.type === 'checkbox'){ el.checked = !!msg.value; }
+        else if(el.tagName === 'INPUT'){ el.value = msg.value || ''; }
+        else if(el.tagName === 'TEXTAREA'){ el.value = msg.value || ''; autosize(el); }
+        highlight(el.closest('.wl, .wlbl, .wlta, td, label.ck') || el);
+      } catch(err){}
+    });
+    es.addEventListener('drawing', function(e){
+      try {
+        var msg = JSON.parse(e.data);
+        var handle = canvasHandles[msg.fieldId];
+        if(!handle) return;
+        var url = API + '/' + studentId + '/drawings/' + encodeURIComponent(msg.fieldId) + '?t=' + Date.now();
+        handle.setBaseSrc(url);
+        var cv = document.querySelector('canvas[data-f="' + msg.fieldId + '"]');
+        if(cv) highlight(cv.parentElement);
+      } catch(err){}
+    });
+    es.onerror = function(){ setNet(false); };
+    es.addEventListener('open', function(){ setNet(true); });
+  }
+
+  var MM = 210 * 96 / 25.4;
+  function scale(){
+    if(window.innerWidth < 768){
+      document.querySelectorAll('.page').forEach(function(p){ p.style.zoom = ''; });
+      return;
+    }
+    var stageEl = document.querySelector('.stage');
+    if(!stageEl) return;
+    var avail = Math.min(stageEl.clientWidth - 16, 1000);
+    var s = Math.min(1, avail / MM);
+    document.querySelectorAll('.page').forEach(function(p){ p.style.zoom = s; });
+  }
+  scale();
+  window.addEventListener('resize', function(){ clearTimeout(window._st); window._st = setTimeout(scale, 150); });
+
+  var sel = document.getElementById('nav');
+  if(sel) sel.addEventListener('change', function(){
+    var t = document.getElementById('page-' + sel.value);
+    if(t) t.scrollIntoView({behavior:'smooth', block:'start'});
+  });
+  var counter = document.querySelector('.counter');
+  var pages = Array.prototype.slice.call(document.querySelectorAll('.page'));
+  window.addEventListener('scroll', function(){
+    var mid = window.innerHeight / 2, cur = 1;
+    pages.forEach(function(p){ var r = p.getBoundingClientRect();
+      if(r.top < mid) cur = +p.dataset.page; });
+    if(counter) counter.textContent = cur + ' / ' + pages.length;
+  });
+
+  var btnPrint = document.getElementById('btn-print');
+  if(btnPrint) btnPrint.addEventListener('click', function(){ window.print(); });
+})();
+"""
+
+
+def write_manifest(path):
+    canonical = '\n'.join(f"{f['id']}:{f['type']}" for f in MANIFEST_FIELDS)
+    version = hashlib.sha256(canonical.encode('utf-8')).hexdigest()[:12]
+    manifest = {'version': version, 'fields': MANIFEST_FIELDS}
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    with open(path, 'w', encoding='utf-8') as f:
+        json.dump(manifest, f, ensure_ascii=False, indent=2)
+        f.write('\n')
+    return manifest
+
+
 if __name__ == '__main__':
-    body, n, nav = build_pages()
+    try:
+        body, n, nav = build_pages()
+    except BuildError as e:
+        raise SystemExit(f'ОШИБКА СБОРКИ: {e}')
+
     body = re.sub(r'\{\{P\s+(\w+)\}\}', lambda m: ANCHORS.get(m.group(1), '--'), body)
 
     options = ''.join(f'<option value="{num}">{label}</option>' for num, label in nav)
@@ -304,6 +935,43 @@ if __name__ == '__main__':
         f"{topbar}<div class='stage'>{body}</div>"
         f"<script>{WEB_JS}</script></body></html>"
     )
-    open('workbook_web.html', 'w', encoding='utf-8').write(html)
-    size = os.path.getsize('workbook_web.html') / 1024
+    out_path = '../index.html'
+    open(out_path, 'w', encoding='utf-8').write(html)
+    manifest = write_manifest('../dist/manifest.json')
+
+    # ---- платформенная сборка (public/workbook/app.html + lib/workbook/manifest.json) ----
+    # window.__WB__ инжектится сервером (Next.js route handler), здесь его нет —
+    # PLATFORM_JS просто ничего не делает, пока __WB__ не установлен.
+    topbar_platform = (
+        '<div class="topbar">'
+        '<span class="brand">PrimeTeens · Рабочая тетрадь</span>'
+        f'<select id="nav"><option value="1">В начало</option>{options}</select>'
+        '<span class="spacer"></span>'
+        f'<span class="counter">1 / {n}</span>'
+        '<span class="saved">сохранено</span>'
+        '<span class="netstatus">нет связи, повторяем…</span>'
+        '<button id="btn-print" type="button">Печать</button>'
+        '</div>'
+    )
+    html_platform = (
+        "<!doctype html><html lang='ru'><head><meta charset='utf-8'>"
+        "<meta name='viewport' content='width=device-width,initial-scale=1'>"
+        "<title>PrimeTeens · Рабочая тетрадь</title>"
+        f"{FONTS_LINK}"
+        f"<style>{CSS}\n{WEB_CSS}\n{PLATFORM_CSS}</style></head><body>"
+        f"{topbar_platform}<div class='stage'>{body}</div>"
+        f"<script>{PLATFORM_JS}</script></body></html>"
+    )
+    platform_out = '../../public/workbook/app.html'
+    os.makedirs(os.path.dirname(platform_out), exist_ok=True)
+    open(platform_out, 'w', encoding='utf-8').write(html_platform)
+    write_manifest('../../lib/workbook/manifest.json')
+
+    size = os.path.getsize(out_path) / 1024
+    platform_size = os.path.getsize(platform_out) / 1024
+    by_type = {}
+    for f in MANIFEST_FIELDS:
+        by_type[f['type']] = by_type.get(f['type'], 0) + 1
     print(f'страниц: {n} | размер: {size:.0f} КБ | разделов в навигации: {len(nav)}')
+    print(f'полей: {by_type} | всего: {len(MANIFEST_FIELDS)} | манифест: dist/manifest.json (v{manifest["version"]})')
+    print(f'платформа: {platform_out} ({platform_size:.0f} КБ) | манифест: lib/workbook/manifest.json')

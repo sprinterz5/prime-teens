@@ -17,14 +17,14 @@
 <div class="grid2">
   <div class="panel">
     <div class="label">ВЕТКА, КОТОРУЮ ОБВЁЛ</div>
-    <div class="mt3">{{K МОЯ ВЕТКА}}</div>
+    <div class="mt3">{{K МОЯ ВЕТКА|id=d3-chosen-branch}}</div>
     <div class="label mt5">ПОЧЕМУ ИМЕННО ОНА</div>
-    <div class="mt3">{{L 3}}</div>
+    <div class="mt3">{{L 3|id=d3-branch-reason|ta}}</div>
   </div>
   <div class="card">
     <div class="label">КАКОЙ ВОПРОС ИЗ НЕЁ ТОРЧИТ</div>
     <div class="tiny mt2">Не «нужную для поступления», а ту, про которую можешь говорить без остановки.</div>
-    <div class="mt3">{{L 3}}</div>
+    <div class="mt3">{{L 3|id=d3-branch-question|ta}}</div>
   </div>
 </div>
 
@@ -35,30 +35,30 @@
 
 <div class="card mt5">
   <div class="label">ЧТО СКАЗАЛ СОСЕД, КОГДА УСЛЫШАЛ МОЙ ВОПРОС</div>
-  <div class="mt3">{{L 2}}</div>
+  <div class="mt3">{{L 2|id=d3-neighbor-reaction|ta}}</div>
 </div>
 
 <!--PAGE class="" hl="НЕДЕЛЯ 1 · БЛОК 1–2" hr="ДЕНЬ 3"-->
 <div class="task"><span class="n">2</span><span class="tt">Вопрос → гипотеза → метод</span><span class="hint">три звена, без которых нет исследования</span></div>
 
 <div class="sec">1 · Исследовательский вопрос</div>
-<div class="card">{{L 2}}</div>
+<div class="card">{{L 2|id=d3-research-question|ta}}</div>
 
 <div class="panel mt4">
   <div class="label">ПРОВЕРЬ ПО ЧЕТЫРЁМ ФИЛЬТРАМ · ГАЛОЧКУ СТАВЬ, ТОЛЬКО ЕСЛИ ЭТО ПРАВДА</div>
   <div class="mt3">
-    <div class="ck"><span><b>Конкретный</b> — понятно, кто, где и что измеряем</span></div>
-    <div class="ck"><span><b>Измеримый</b> — ответ будет числом или сравнением, а не «хорошо / плохо»</span></div>
-    <div class="ck"><span><b>Посильный</b> — можно ответить в отведённый срок без лаборатории и бюджета</span></div>
-    <div class="ck" style="margin-bottom:0;"><span><b>Твой</b> — тебе самому интересно узнать ответ</span></div>
+    <div class="ck" data-id="d3-question-filter-specific"><span><b>Конкретный</b> — понятно, кто, где и что измеряем</span></div>
+    <div class="ck" data-id="d3-question-filter-measurable"><span><b>Измеримый</b> — ответ будет числом или сравнением, а не «хорошо / плохо»</span></div>
+    <div class="ck" data-id="d3-question-filter-feasible"><span><b>Посильный</b> — можно ответить в отведённый срок без лаборатории и бюджета</span></div>
+    <div class="ck" data-id="d3-question-filter-personal" style="margin-bottom:0;"><span><b>Твой</b> — тебе самому интересно узнать ответ</span></div>
   </div>
 </div>
 
 <div class="sec">2 · Гипотеза — мой прогноз ответа</div>
 <div class="grid3">
-  <div class="card"><div class="label">ЕСЛИ</div><div class="mt3">{{L 2}}</div></div>
-  <div class="card"><div class="label">ТО</div><div class="mt3">{{L 2}}</div></div>
-  <div class="card"><div class="label">ПОТОМУ ЧТО</div><div class="mt3">{{L 2}}</div></div>
+  <div class="card"><div class="label">ЕСЛИ</div><div class="mt3">{{L 2|id=d3-hypothesis-if|ta}}</div></div>
+  <div class="card"><div class="label">ТО</div><div class="mt3">{{L 2|id=d3-hypothesis-then|ta}}</div></div>
+  <div class="card"><div class="label">ПОТОМУ ЧТО</div><div class="mt3">{{L 2|id=d3-hypothesis-because|ta}}</div></div>
 </div>
 <div class="tiny mt3">Опровергнутая гипотеза — тоже результат. Бояться стоит только гипотезы, которую невозможно проверить.</div>
 
@@ -66,7 +66,7 @@
 <div class="lead">Поменяйтесь тетрадями. Задача — найти дыру в вопросе соседа: «как именно измеришь?», «успеешь в срок?», «где возьмёшь данные?». Ответ «ну как-нибудь» не принимается.</div>
 <div class="card">
   <div class="label">ЧТО В МОЁМ ВОПРОСЕ ИЗМЕНИЛОСЬ ПОСЛЕ АТАКИ</div>
-  <div class="mt3">{{L 2}}</div>
+  <div class="mt3">{{L 2|id=d3-question-after-attack|ta}}</div>
 </div>
 
 <!--PAGE class="cheat" hl="ШПАРГАЛКА" hr="ИССЛЕДОВАНИЕ"-->
@@ -133,29 +133,29 @@
 <div class="lead">Тему опроса объявит ментор — она у каждого потока своя. Дальше неделя на то, чтобы опросить как можно более разных людей: разного возраста, класса, интересов. Здесь фиксируешь, как именно будешь это делать.</div>
 
 <table class="tall2">
-  <tr><td class="mid" style="width:64mm;">Тема опроса</td><td class="fill"></td></tr>
-  <tr><td class="mid">Кого спрашиваю <span class="tiny">чем разнообразнее, тем лучше</span></td><td></td></tr>
-  <tr><td class="mid">Сколько человек успею опросить за неделю</td><td></td></tr>
-  <tr><td class="mid">Чем фиксирую <span class="tiny">тетрадь, заметки, таблица</span></td><td></td></tr>
+  <tr><td class="mid" style="width:64mm;">Тема опроса</td><td class="fill" data-id="d3-survey-topic"></td></tr>
+  <tr><td class="mid">Кого спрашиваю <span class="tiny">чем разнообразнее, тем лучше</span></td><td data-id="d3-survey-audience"></td></tr>
+  <tr><td class="mid">Сколько человек успею опросить за неделю</td><td data-id="d3-survey-count"></td></tr>
+  <tr><td class="mid">Чем фиксирую <span class="tiny">тетрадь, заметки, таблица</span></td><td data-id="d3-survey-tool"></td></tr>
 </table>
 
 <div class="grid2 mt5">
   <div class="card">
     <div class="label">ПЯТЬ ВОПРОСОВ АНКЕТЫ</div>
-    <div class="mt3">{{LS 6}}</div>
+    <div class="mt3">{{LS 6|id=d3-survey-question}}</div>
   </div>
   <div class="card">
     <div class="label">ЧТО МОЖЕТ ПОЙТИ НЕ ТАК И ЧТО Я СДЕЛАЮ</div>
     <div class="tiny mt2">Никто не отвечает · спрашиваю только своих друзей · данных мало</div>
-    <div class="mt3">{{LS 5}}</div>
+    <div class="mt3">{{LS 5|id=d3-survey-risk}}</div>
   </div>
 </div>
 
 <div class="hw mt5">
   <div class="label">ДО СЛЕДУЮЩЕЙ ВСТРЕЧИ</div>
   <div class="mt3">
-    <div class="ck"><span>Опросить максимально разных людей — не только одноклассников</span></div>
-    <div class="ck" style="margin-bottom:0;"><span>Записывать ответы сразу, не откладывая на потом</span></div>
+    <div class="ck" data-id="d3-survey-checklist-diverse"><span>Опросить максимально разных людей — не только одноклассников</span></div>
+    <div class="ck" data-id="d3-survey-checklist-record" style="margin-bottom:0;"><span>Записывать ответы сразу, не откладывая на потом</span></div>
   </div>
 </div>
 
@@ -177,35 +177,35 @@
 <div class="grid2">
   <div class="card">
     <div class="label">МОЯ СТРАНА</div>
-    <div class="mt3">{{L 1}}</div>
+    <div class="mt3">{{L 1|id=d4-country}}</div>
     <div class="label mt4">ПОЗИЦИЯ СТРАНЫ В ОДНОМ ПРЕДЛОЖЕНИИ</div>
-    <div class="mt3">{{L 2}}</div>
+    <div class="mt3">{{L 2|id=d4-country-position|ta}}</div>
   </div>
   <div class="card">
     <div class="label">ТРИ ФАКТА-ОПОРЫ ИЗ ПРОФИЛЯ СТРАНЫ</div>
-    <div class="mt3">{{L 4}}</div>
+    <div class="mt3">{{L 4|id=d4-country-facts}}</div>
   </div>
 </div>
 
 <div class="grid2 mt4">
   <div class="card">
     <div class="label">СОЮЗНИКИ · КТО ГОВОРИТ ПОХОЖЕЕ</div>
-    <div class="mt3">{{L 3}}</div>
+    <div class="mt3">{{L 3|id=d4-allies}}</div>
   </div>
   <div class="card">
     <div class="label">ОППОНЕНТЫ · ЧЕЙ АРГУМЕНТ МЕНЯ ЦАРАПАЕТ</div>
-    <div class="mt3">{{L 3}}</div>
+    <div class="mt3">{{L 3|id=d4-opponents}}</div>
   </div>
 </div>
 
 <div class="sec">Что моя страна вносит в резолюцию</div>
 <div class="tiny mb3">Пункт резолюции — это действие с исполнителем и сроком, а не «мы призываем задуматься».</div>
-{{L 4}}
+{{L 4|id=d4-resolution-points}}
 
 <div class="grid3 mt5">
-  <div class="card"><div class="label">ИТОГ ГОЛОСОВАНИЯ</div><div class="mt3">{{L 1}}</div></div>
-  <div class="card"><div class="label">ЧТО У МЕНЯ СРАБОТАЛО</div><div class="mt3">{{L 1}}</div></div>
-  <div class="card"><div class="label">ЧТО ПРОВАЛИЛОСЬ</div><div class="mt3">{{L 1}}</div></div>
+  <div class="card"><div class="label">ИТОГ ГОЛОСОВАНИЯ</div><div class="mt3">{{L 1|id=d4-vote-result}}</div></div>
+  <div class="card"><div class="label">ЧТО У МЕНЯ СРАБОТАЛО</div><div class="mt3">{{L 1|id=d4-what-worked}}</div></div>
+  <div class="card"><div class="label">ЧТО ПРОВАЛИЛОСЬ</div><div class="mt3">{{L 1|id=d4-what-failed}}</div></div>
 </div>
 
 <!--PAGE class="cheat" hl="ШПАРГАЛКА" hr="MUN"-->
@@ -292,18 +292,18 @@
 <div class="grid2">
   <div class="card">
     <div class="label">ОСТАВЛЯЮ</div>
-    <div class="mt3">{{L 3}}</div>
+    <div class="mt3">{{L 3|id=d5-mvp-keep|ta}}</div>
   </div>
   <div class="card">
     <div class="label">ПОЧЕМУ ИМЕННО ОНА — ОДНО ПРЕДЛОЖЕНИЕ</div>
-    <div class="mt3">{{L 3}}</div>
+    <div class="mt3">{{L 3|id=d5-mvp-why|ta}}</div>
   </div>
 </div>
 
 <div class="card mt4">
   <div class="label">ЧТО ВЫЧЕРКНУЛ, НО ЖАЛКО — И КОГДА ЭТО МОЖНО ВЕРНУТЬ</div>
   <div class="tiny mt2">Список того, что добавится во второй версии, если первая заработает.</div>
-  <div class="mt3">{{L 3}}</div>
+  <div class="mt3">{{L 3|id=d5-mvp-cut}}</div>
 </div>
 
 <div class="note mt5">
@@ -317,29 +317,29 @@
 
 <div class="panel">
   <div class="label">МОЯ ИДЕЯ</div>
-  <div class="mt3">{{L 1}}</div>
+  <div class="mt3">{{L 1|id=d5-idea}}</div>
 </div>
 
 <div class="grid2 mt4">
   <div class="card">
     <div class="label">1 · ЧЬЯ ЭТО ПРОБЛЕМА</div>
     <div class="tiny mt2">Конкретный человек, а не «люди вообще».</div>
-    <div class="mt3">{{L 2}}</div>
+    <div class="mt3">{{L 2|id=d5-idea-whose-problem|ta}}</div>
   </div>
   <div class="card">
     <div class="label">2 · ЧТО ИМЕННО НЕ ТАК</div>
     <div class="tiny mt2">Что он делает сейчас и почему это плохо.</div>
-    <div class="mt3">{{L 2}}</div>
+    <div class="mt3">{{L 2|id=d5-idea-problem|ta}}</div>
   </div>
   <div class="card">
     <div class="label">3 · ЧТО ПРЕДЛАГАЕМ</div>
     <div class="tiny mt2">Решение в одно предложение, без списка функций.</div>
-    <div class="mt3">{{L 2}}</div>
+    <div class="mt3">{{L 2|id=d5-idea-solution|ta}}</div>
   </div>
   <div class="card">
     <div class="label">4 · ПОЧЕМУ СРАБОТАЕТ</div>
     <div class="tiny mt2">Аргумент, а не «будет круто». Лучше — число.</div>
-    <div class="mt3">{{L 2}}</div>
+    <div class="mt3">{{L 2|id=d5-idea-why-works|ta}}</div>
   </div>
 </div>
 
@@ -350,8 +350,8 @@
 </div>
 
 <div class="grid2 mt4">
-  <div class="card"><div class="label">ЧТО СКАЗАЛИ ПРО МОЙ ПРОЕКТ</div><div class="mt3">{{L 3}}</div></div>
-  <div class="card"><div class="label">ЧЕЙ ПРИЁМ Я ЗАБИРАЮ СЕБЕ</div><div class="mt3">{{L 3}}</div></div>
+  <div class="card"><div class="label">ЧТО СКАЗАЛИ ПРО МОЙ ПРОЕКТ</div><div class="mt3">{{L 3|id=d5-pitch-feedback|ta}}</div></div>
+  <div class="card"><div class="label">ЧЕЙ ПРИЁМ Я ЗАБИРАЮ СЕБЕ</div><div class="mt3">{{L 3|id=d5-pitch-technique|ta}}</div></div>
 </div>
 
 <div class="hw mt5">
