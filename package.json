@@ -7,27 +7,34 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "prisma:generate": "prisma generate"
+    "prisma:generate": "prisma generate",
+    "db:dev": "node scripts/dev-db.mjs",
+    "db:seed": "tsx scripts/seed-dev.ts",
+    "test:telegram-auth": "tsx scripts/test-telegram-initdata.ts"
   },
   "dependencies": {
     "@prisma/client": "^6.0.0",
     "clsx": "^2.1.1",
     "lucide-react": "^0.475.0",
     "next": "^15.0.0",
+    "pg": "^8.13.1",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "zod": "^3.24.1"
   },
   "devDependencies": {
     "@types/node": "^22.10.5",
+    "@types/pg": "^8.11.10",
     "@types/react": "^19.0.2",
     "@types/react-dom": "^19.0.2",
     "autoprefixer": "^10.4.20",
+    "embedded-postgres": "18.4.0-beta.17",
     "eslint": "^9.17.0",
     "eslint-config-next": "^15.0.0",
     "postcss": "^8.4.49",
     "prisma": "^6.0.0",
     "tailwindcss": "^3.4.17",
+    "tsx": "^4.19.2",
     "typescript": "^5.7.2"
   }
 }

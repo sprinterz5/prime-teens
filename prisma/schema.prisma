@@ -40,18 +40,18 @@ enum LeadStatus {
 }
 
 model User {
-  id           String     @id @default(cuid())
-  email        String     @unique
-  phone        String?
-  passwordHash String?
-  oauthId      String?
-  role         Role       @default(STUDENT)
-  status       UserStatus @default(INVITED)
-  locale       String     @default("ru")
-  assignedLeads Lead[]    @relation("LeadAssignedSales")
-  createdAt    DateTime   @default(now())
-  updatedAt    DateTime   @updatedAt
-  deletedAt    DateTime?
+  id            String     @id @default(cuid())
+  email         String     @unique
+  phone         String?
+  passwordHash  String?
+  oauthId       String?
+  role          Role       @default(STUDENT)
+  status        UserStatus @default(INVITED)
+  locale        String     @default("ru")
+  assignedLeads Lead[]     @relation("LeadAssignedSales")
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+  deletedAt     DateTime?
 }
 
 model Lead {
@@ -69,4 +69,256 @@ model Lead {
   createdAt       DateTime   @default(now())
   updatedAt       DateTime   @updatedAt
   deletedAt       DateTime?
+}
+
+// ---------------------------------------------------------------------------
+// Course platform (workbook + mentor bot) — shared with the Python Telegram
+// bot in bot/, which reads/writes these same tables via plain asyncpg SQL.
+// Prisma owns the schema/migrations; table and column names are pinned to
+// the bot's existing SQLite names (bot/app/schema.sql + _migrate() in
+// bot/app/db.py) via @@map/@map so the bot's raw SQL keeps working unchanged
+// apart from the type adjustments called out below (bool vs 0/1, BigInt tg
+// ids, real Date/Timestamptz instead of TEXT).
+// ---------------------------------------------------------------------------
+
+model Group {
+  id         Int       @id @default(autoincrement())
+  name       String    @unique
+  startDate  DateTime? @map("start_date") @db.Date
+  lessonTime String?   @map("lesson_time")
+  shift      String    @default("evening")
+  format     String?
+  createdAt  DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  students      Student[]
+  kidFeedback   KidFeedback[]
+  rosterEntries Roster[]
+  mentorGroups  MentorGroup[]
+  sessions      Session[]
+  invites       Invite[]
+
+  @@map("groups")
+}
+
+model Student {
+  id          Int     @id @default(autoincrement())
+  groupId     Int     @map("group_id")
+  fullName    String  @map("full_name")
+  shortName   String? @map("short_name")
+  classSchool String? @map("class_school")
+  team        String?
+  phone       String?
+  tgUserId    BigInt? @unique @map("tg_user_id")
+  active      Boolean @default(true)
+
+  group              Group             @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  kidFeedback        KidFeedback[]
+  hackTeamsLed       HackTeam[]        @relation("HackTeamLeader")
+  hackTeamMembership HackTeamMember[]
+  answers            Answer[]
+  characteristics    Characteristic[]
+  invites            Invite[]
+  workbookEntries    WorkbookEntry[]
+  workbookDrawings   WorkbookDrawing[]
+
+  @@unique([groupId, fullName])
+  @@map("students")
+}
+
+// Отзывы учеников о занятии — детский бот. Анонимны ПО ПОЛИТИКЕ: student_id
+// хранится, но ни один экран для менторов/админа не должен присоединять имя
+// ученика к тексту отзыва (см. group_kid_feedback в bot/app/db.py).
+model KidFeedback {
+  id        Int      @id @default(autoincrement())
+  studentId Int      @map("student_id")
+  groupId   Int      @map("group_id")
+  dayIndex  Int      @map("day_index")
+  rating    Int?
+  text      String?
+  source    String   @default("text")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  student Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  group   Group   @relation(fields: [groupId], references: [id], onDelete: Cascade)
+
+  @@index([groupId, dayIndex], map: "idx_kid_feedback_group_day")
+  @@map("kid_feedback")
+}
+
+model HackTeam {
+  id        Int      @id @default(autoincrement())
+  name      String
+  caseName  String?  @map("case_name")
+  leaderId  Int      @map("leader_id")
+  joinCode  String   @unique @map("join_code")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  leader  Student          @relation("HackTeamLeader", fields: [leaderId], references: [id], onDelete: Cascade)
+  members HackTeamMember[]
+
+  @@map("hack_teams")
+}
+
+model HackTeamMember {
+  teamId    Int      @map("team_id")
+  studentId Int      @map("student_id")
+  joinedAt  DateTime @default(now()) @map("joined_at") @db.Timestamptz(6)
+
+  team    HackTeam @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  student Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@id([teamId, studentId])
+  @@map("hack_team_members")
+}
+
+// Белый список телефонов: кто имеет право зарегистрироваться ментором.
+model Roster {
+  phone    String  @id
+  fullName String  @map("full_name")
+  groupId  Int?    @map("group_id")
+  isAdmin  Boolean @default(false) @map("is_admin")
+  isMentor Boolean @default(true) @map("is_mentor")
+
+  group Group? @relation(fields: [groupId], references: [id], onDelete: SetNull)
+
+  @@map("roster")
+}
+
+model Mentor {
+  id        Int      @id @default(autoincrement())
+  tgUserId  BigInt   @unique @map("tg_user_id")
+  phone     String?
+  fullName  String?  @map("full_name")
+  isAdmin   Boolean  @default(false) @map("is_admin")
+  isMentor  Boolean  @default(true) @map("is_mentor")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  mentorGroups MentorGroup[]
+  sessions     Session[]
+
+  @@map("mentors")
+}
+
+model MentorGroup {
+  mentorId Int @map("mentor_id")
+  groupId  Int @map("group_id")
+
+  mentor Mentor @relation(fields: [mentorId], references: [id], onDelete: Cascade)
+  group  Group  @relation(fields: [groupId], references: [id], onDelete: Cascade)
+
+  @@id([mentorId, groupId])
+  @@map("mentor_groups")
+}
+
+// Заполнение чек-листа за конкретный день
+model Session {
+  id         Int       @id @default(autoincrement())
+  mentorId   Int       @map("mentor_id")
+  groupId    Int       @map("group_id")
+  dayIndex   Int       @map("day_index")
+  kind       String    @default("lesson")
+  status     String    @default("open")
+  startedAt  DateTime  @default(now()) @map("started_at") @db.Timestamptz(6)
+  finishedAt DateTime? @map("finished_at") @db.Timestamptz(6)
+
+  mentor  Mentor   @relation(fields: [mentorId], references: [id], onDelete: Cascade)
+  group   Group    @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  answers Answer[]
+
+  @@index([groupId, dayIndex, kind], map: "idx_sessions_group_day")
+  @@map("sessions")
+}
+
+// Ответы. Один ряд = один ответ на один вопрос. group_id здесь без FK — так
+// же, как в исходной schema.sql (см. комментарий там).
+model Answer {
+  id           Int      @id @default(autoincrement())
+  sessionId    Int      @map("session_id")
+  groupId      Int      @map("group_id")
+  dayIndex     Int      @map("day_index")
+  studentId    Int?     @map("student_id")
+  questionKey  String   @map("question_key")
+  questionText String?  @map("question_text")
+  mapsTo       String?  @map("maps_to")
+  value        String?
+  text         String?
+  source       String   @default("text")
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  session Session  @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  student Student? @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@index([studentId], map: "idx_answers_student")
+  @@index([sessionId], map: "idx_answers_session")
+  @@map("answers")
+}
+
+// Сгенерированные характеристики
+model Characteristic {
+  id        Int      @id @default(autoincrement())
+  studentId Int      @map("student_id")
+  payload   Json
+  htmlPath  String?  @map("html_path")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  student Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@map("characteristics")
+}
+
+// Чтобы не слать одно и то же напоминание дважды
+model Notification {
+  key    String   @id
+  sentAt DateTime @default(now()) @map("sent_at") @db.Timestamptz(6)
+
+  @@map("notifications")
+}
+
+// Пригласительные ссылки (менторы/админы/ученики). created_by и used_by_tg
+// хранят Telegram user id, а не FK на mentors.id — см. bot/app/db.py.
+model Invite {
+  token     String    @id
+  groupId   Int       @map("group_id")
+  studentId Int?      @map("student_id")
+  role      String    @default("mentor")
+  createdBy BigInt?   @map("created_by")
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  revoked   Boolean   @default(false)
+  usedByTg  BigInt?   @map("used_by_tg")
+  usedAt    DateTime? @map("used_at") @db.Timestamptz(6)
+
+  group   Group    @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  student Student? @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@map("invites")
+}
+
+// ---------------------------------------------------------------------------
+// Online workbook (Next.js platform only — the bot does not touch these).
+// ---------------------------------------------------------------------------
+
+model WorkbookEntry {
+  studentId   Int      @map("student_id")
+  fieldId     String   @map("field_id")
+  value       Json
+  updatedAt   DateTime @default(now()) @map("updated_at") @db.Timestamptz(6)
+  updatedByTg BigInt?  @map("updated_by_tg")
+
+  student Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@id([studentId, fieldId])
+  @@index([updatedAt])
+  @@map("workbook_entries")
+}
+
+model WorkbookDrawing {
+  studentId Int      @map("student_id")
+  fieldId   String   @map("field_id")
+  filePath  String   @map("file_path")
+  updatedAt DateTime @default(now()) @map("updated_at") @db.Timestamptz(6)
+
+  student Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@id([studentId, fieldId])
+  @@map("workbook_drawings")
 }
