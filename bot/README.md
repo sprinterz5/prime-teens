@@ -447,6 +447,102 @@ syrye_dannye.json      всё машиночитаемо
 
 ---
 
+## Перенос на сервер (Linux)
+
+Оба бота — long polling, вебхук не нужен, публичный IP/домен/HTTPS-сертификат тоже
+не нужен. Серверу достаточно исходящего интернета до `api.telegram.org`.
+
+Сайт (корень репозитория) едет на Vercel отдельно (см. `.vercelignore` — `bot/` и
+`workbook/` туда не попадают). У бота свой хост нужен только под сами процессы —
+и под тот же `DATABASE_URL`, что видит веб-платформа: это общий Postgres, а не
+что-то бот-специфичное для переноса.
+
+Обычного git хватает — секреты и машинно-зависимое уже в `.gitignore`
+(`.env`, `.venv/`, `data/`). Роль, которую раньше играла отдельная SQLite-БД,
+здесь у Postgres: если это тот же инстанс, что уже видит прод-сайт (или его
+реплика/дамп на новом сервере), группы/менторы/ученики можно и не гонять
+заново — они уже там. Нужен именно свежий инстанс — тогда `/sync_sheet` (и
+ночной автозабор) восстановит ростер из Google-таблицы; накопленные заметки/
+чек-листы/фидбек от детей/хакатон-команды из таблицы не восстановятся —
+только `pg_dump`/`pg_restore` самого Postgres.
+
+### Разово на сервере
+
+```bash
+git clone <URL-репозитория> /opt/prime-teens
+cd /opt/prime-teens/bot
+
+python3.14 -m venv .venv
+.venv/bin/pip install -r requirements.txt
+
+cp .env.example .env
+nano .env   # BOT_TOKEN, KIDS_BOT_TOKEN, DATABASE_URL и т.д. руками — .env в git не попадает
+```
+
+`DATABASE_URL` должен указывать на тот же Postgres, что и сайт (либо на его копию
+для этого сервера) — схему и миграции по-прежнему ведёт Prisma из корня репозитория
+(`pnpm prisma migrate deploy`), бот сам ничего не создаёт.
+
+`.env` на сервер копировать НЕ через git — впиши значения руками (выше) или
+перекинь файл отдельно по `scp` (разовая передача секрета по защищённому каналу,
+не хранение в репозитории):
+
+```bash
+scp .env primeteens@<сервер>:/opt/prime-teens/bot/.env
+```
+
+Проверь руками, что оба бота стартуют и не падают:
+
+```bash
+.venv/bin/python -m app.main       # Ctrl+C, когда увидел, что поднялся без ошибок
+.venv/bin/python -m app.kids.main  # аналогично
+```
+
+### Автозапуск и автоперезапуск (systemd)
+
+В [`deploy/`](deploy/) — два юнит-файла, `primeteens-mentor.service` и
+`primeteens-kids.service`. Перед установкой поправь в них `User=` и
+`WorkingDirectory=`/`ExecStart=` под реальные путь и системного пользователя (не
+рут — создай отдельного: `useradd -r -m primeteens`, и отдай ему `chown -R` на
+`/opt/prime-teens`).
+
+```bash
+sudo cp deploy/primeteens-*.service /etc/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl enable --now primeteens-mentor primeteens-kids
+```
+
+Логи:
+
+```bash
+journalctl -u primeteens-mentor -f
+journalctl -u primeteens-kids -f
+```
+
+### Обновление кода
+
+```bash
+cd /opt/prime-teens
+git pull
+cd bot && .venv/bin/pip install -r requirements.txt   # если requirements.txt менялся
+sudo systemctl restart primeteens-mentor primeteens-kids
+```
+
+### На заметку
+
+- Python 3.14 — та же версия, на которой проверялись колёса `faster-whisper`/
+  `ctranslate2` (см. `requirements.txt`). Более новый Linux-дистрибутив вполне
+  может тащить только 3.11–3.12 из коробки — тогда ставь 3.14 отдельно
+  (`deadsnakes` PPA на Ubuntu, или pyenv) либо проверь, что на доступной версии
+  колёса тоже есть, прежде чем переносить.
+- `data/media`, `data/out` создаются сами при первом запуске
+  (`Path.mkdir(parents=True, exist_ok=True)` в `app/config.py`) — руками заводить
+  не нужно.
+- Не запускай оба бота одновременно на старой (Windows) и новой (сервер) машине —
+  два процесса с одним `BOT_TOKEN` дерутся за `getUpdates`, это уже приводило к
+  дублирующимся/потерянным сообщениям в этом проекте. Останови `run.bat`/
+  `start_both.bat` на Windows, прежде чем поднимать `systemctl start` на сервере.
+
 ## Структура
 
 ```
@@ -481,6 +577,7 @@ tools/
   _pgtest.py         готовит отдельную БД primeteens_test для test_*.py/smoke.py
   sqlite_to_pg.py    разовый перенос данных из старой SQLite-базы в Postgres
 seed/                примеры CSV
+deploy/              systemd-юниты для переноса на Linux-сервер
 data/                медиа, готовые документы, старые SQLite-бэкапы (в git не идёт)
 ```
 

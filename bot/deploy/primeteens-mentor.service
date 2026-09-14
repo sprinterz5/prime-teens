@@ -1,0 +1,18 @@
+[Unit]
+Description=PrimeTeens - mentor bot
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+# Change to the real deploy path and the user that should own it.
+User=primeteens
+WorkingDirectory=/opt/prime-teens/bot
+# DATABASE_URL in .env must point at the same Postgres the web app (repo root)
+# uses - the bot does not own the schema, Prisma does (see root prisma/).
+ExecStart=/opt/prime-teens/bot/.venv/bin/python -m app.main
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
