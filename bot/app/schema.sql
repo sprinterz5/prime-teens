@@ -1,3 +1,14 @@
+-- ИСТОРИЧЕСКАЯ СПРАВКА. Бот больше не создаёт и не мигрирует эту схему —
+-- база теперь Postgres, общая с веб-платформой (apps/web), и её схемой/
+-- миграциями владеет Prisma (repo root prisma/schema.prisma,
+-- prisma/migrations/*/migration.sql). Таблицы/колонки там называются так же
+-- (см. @@map/@map в prisma/schema.prisma), но с настоящими типами: boolean
+-- вместо 0/1, BIGINT под Telegram id, date/timestamptz вместо TEXT. Этот файл
+-- оставлен только чтобы видеть, как выглядела исходная SQLite-схема и
+-- зачем — ничего отсюда больше не выполняется (см. app/db.py: init()).
+--
+-- Ниже — оригинальный SQLite-текст без изменений.
+
 PRAGMA journal_mode = WAL;
 PRAGMA foreign_keys = ON;
 

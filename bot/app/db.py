@@ -1,114 +1,106 @@
-"""Тонкий слой над SQLite. Одно соединение на процесс, aiosqlite."""
+"""Тонкий слой над Postgres. Один пул соединений на процесс, asyncpg.
+
+Схему и миграции владеет Prisma (repo root prisma/schema.prisma,
+prisma/migrations/) — общая база с Next.js-платформой (apps/web). Бот сюда
+ничего не мигрирует и не создаёт: init() только открывает пул. Имена таблиц/
+колонок пришли из старой SQLite-схемы (см. schema.sql — оставлен как
+историческая справка) и закреплены в prisma/schema.prisma через @@map/@map,
+так что весь SQL ниже работает без изменений в текстах запросов. Реальные
+отличия от SQLite — типы: booleans вместо 0/1, BIGINT под Telegram id,
+настоящие date/timestamptz вместо TEXT (см. места, где значения приходят из
+Postgres уже как datetime.date/datetime, а не строки — например start_date в
+group_lesson_window/_group_finished)."""
 from __future__ import annotations
 
 import datetime as dt
+import json
 import re
 from pathlib import Path
 from typing import Any, Optional
 
-import aiosqlite
+import asyncpg
 
 from app.config import COURSE, settings
 
-_conn: Optional[aiosqlite.Connection] = None
-SCHEMA = Path(__file__).with_name("schema.sql")
+_pool: Optional[asyncpg.Pool] = None
+SCHEMA = Path(__file__).with_name("schema.sql")  # историческая справка, см. файл
 
 # Последний день курса — по нему считаем, завершена ли группа (см. _group_finished).
 LAST_DAY_INDEX = max(int(d["index"]) for d in COURSE["days"])
 
 
+async def _init_connection(conn: asyncpg.Connection) -> None:
+    """jsonb/json <-> Python dict/list напрямую, без ручного json.dumps/loads
+    на каждом вызывающем месте (см. save_characteristic)."""
+    await conn.set_type_codec(
+        "jsonb", encoder=json.dumps, decoder=json.loads,
+        schema="pg_catalog", format="text",
+    )
+    await conn.set_type_codec(
+        "json", encoder=json.dumps, decoder=json.loads,
+        schema="pg_catalog", format="text",
+    )
+
+
 async def init() -> None:
-    global _conn
-    _conn = await aiosqlite.connect(settings.db_path)
-    _conn.row_factory = aiosqlite.Row
-    await _conn.executescript(SCHEMA.read_text(encoding="utf-8"))
-    await _conn.commit()
-    await _migrate()
-
-
-async def _migrate() -> None:
-    """Лёгкие миграции поверх schema.sql.
-
-    CREATE TABLE IF NOT EXISTS не трогает уже существующую таблицу — новая
-    колонка сама туда не попадёт. Боевая база (data/bot.sqlite3) уже содержит
-    зарегистрированных менторов, пересоздавать её нельзя, поэтому колонки
-    добираются вручную. Безопасно вызывать повторно: если колонка уже есть,
-    ничего не делаем."""
-    cols = {r["name"] for r in await q("PRAGMA table_info(groups)")}
-    if "shift" not in cols:
-        await run("ALTER TABLE groups ADD COLUMN shift TEXT NOT NULL DEFAULT 'evening'")
-
-    cols = {r["name"] for r in await q("PRAGMA table_info(mentors)")}
-    if "is_mentor" not in cols:
-        # Существующие менторы все, конечно, менторы — DEFAULT 1 покрывает их
-        # без отдельного UPDATE.
-        await run("ALTER TABLE mentors ADD COLUMN is_mentor INTEGER NOT NULL DEFAULT 1")
-
-    cols = {r["name"] for r in await q("PRAGMA table_info(invites)")}
-    if "student_id" not in cols:
-        await run("ALTER TABLE invites ADD COLUMN student_id INTEGER "
-                  "REFERENCES students(id) ON DELETE CASCADE")
-    if "used_by_tg" not in cols:
-        await run("ALTER TABLE invites ADD COLUMN used_by_tg INTEGER")
-    if "used_at" not in cols:
-        await run("ALTER TABLE invites ADD COLUMN used_at TEXT")
-
-    cols = {r["name"] for r in await q("PRAGMA table_info(roster)")}
-    if "is_mentor" not in cols:
-        # Роль из Excel: "админ" без "ментор" -> запись-организатор без своей
-        # группы. DEFAULT 1 покрывает всех, кто был в roster до этой колонки
-        # (они и были обычными менторами).
-        await run("ALTER TABLE roster ADD COLUMN is_mentor INTEGER NOT NULL DEFAULT 1")
-
-    cols = {r["name"] for r in await q("PRAGMA table_info(students)")}
-    if "phone" not in cols:
-        # Из колонки «Контакты» реальной таблицы-ростера — понадобится
-        # детскому боту, чтобы связывать ребёнка по номеру телефона.
-        await run("ALTER TABLE students ADD COLUMN phone TEXT")
-
-    cols = {r["name"] for r in await q("PRAGMA table_info(groups)")}
-    if "format" not in cols:
-        # «Оффлайн/Онлайн» из строки-заголовка блока группы. NULL — формат
-        # не указан/не распознан. На расчёт расписания не влияет.
-        await run("ALTER TABLE groups ADD COLUMN format TEXT")
-
-    cols = {r["name"] for r in await q("PRAGMA table_info(students)")}
-    if "tg_user_id" not in cols:
-        # Привязка ученика к аккаунту в детском боте — по персональной
-        # ссылке или по номеру телефона (app/kids/handlers/registration.py).
-        await run("ALTER TABLE students ADD COLUMN tg_user_id INTEGER")
-    # Индекс — отдельным шагом и БЕЗ условия на "только что добавили колонку":
-    # у свежих баз колонка уже есть в CREATE TABLE (schema.sql), и без этой
-    # безусловной строки индекс там никогда не появится. IF NOT EXISTS делает
-    # повтор безопасным в обоих случаях.
-    await run("CREATE UNIQUE INDEX IF NOT EXISTS idx_students_tg "
-              "ON students(tg_user_id) WHERE tg_user_id IS NOT NULL")
+    global _pool
+    _pool = await asyncpg.create_pool(
+        dsn=settings.database_url, min_size=1, max_size=10, init=_init_connection,
+        # Windows-сервер embedded-postgres поднимается с client_encoding по
+        # умолчанию из локали ОС (WIN1251) — кириллица/эмодзи в параметрах
+        # запроса иначе роняют соединение с UntranslatableCharacterError.
+        server_settings={"client_encoding": "utf8"},
+    )
 
 
 async def close() -> None:
-    if _conn is not None:
-        await _conn.close()
+    if _pool is not None:
+        await _pool.close()
 
 
-def conn() -> aiosqlite.Connection:
-    assert _conn is not None, "db.init() не вызван"
-    return _conn
+def pool() -> asyncpg.Pool:
+    assert _pool is not None, "db.init() не вызван"
+    return _pool
 
 
-async def q(sql: str, *args: Any) -> list[aiosqlite.Row]:
-    async with conn().execute(sql, args) as cur:
-        return list(await cur.fetchall())
+# ----------------------------- запросы -----------------------------
+
+_PLACEHOLDER = re.compile(r"\?")
 
 
-async def q1(sql: str, *args: Any) -> Optional[aiosqlite.Row]:
-    rows = await q(sql, *args)
-    return rows[0] if rows else None
+def _convert(sql: str) -> str:
+    """SQLite-стиль '?' -> asyncpg-стиль '$1'..'$n'. В текстах запросов этого
+    модуля '?' нигде не встречается как литерал (только как placeholder),
+    так что порядковая замена безопасна."""
+    counter = iter(range(1, 10_000))
+    return _PLACEHOLDER.sub(lambda _m: f"${next(counter)}", sql)
+
+
+async def q(sql: str, *args: Any) -> list[asyncpg.Record]:
+    return await pool().fetch(_convert(sql), *args)
+
+
+async def q1(sql: str, *args: Any) -> Optional[asyncpg.Record]:
+    return await pool().fetchrow(_convert(sql), *args)
 
 
 async def run(sql: str, *args: Any) -> int:
-    cur = await conn().execute(sql, args)
-    await conn().commit()
-    return cur.lastrowid
+    """Выполняет UPDATE/DELETE/INSERT и возвращает число затронутых строк
+    (аналог cur.rowcount). Для INSERT, которому нужен id новой/обновлённой
+    записи, см. insert_id()."""
+    tag = await pool().execute(_convert(sql), *args)
+    try:
+        return int(tag.split()[-1])
+    except (ValueError, IndexError):
+        return 0
+
+
+async def insert_id(sql: str, *args: Any) -> Optional[int]:
+    """INSERT (в т.ч. INSERT ... ON CONFLICT DO UPDATE) -> id вставленной/
+    обновлённой строки. sql НЕ должен уже содержать RETURNING — эта функция
+    сама дописывает ' RETURNING id' и делает fetchval. None — если
+    ON CONFLICT DO NOTHING сработал и строка не вставилась."""
+    return await pool().fetchval(_convert(sql) + " RETURNING id", *args)
 
 
 # ----------------------------- телефоны -----------------------------
@@ -121,18 +113,35 @@ def norm_phone(raw: str) -> str:
     return digits
 
 
+# ----------------------------- даты -----------------------------
+
+def _to_date(v: Any) -> Optional[dt.date]:
+    """ISO-строка/date/datetime -> date для параметра запроса (колонка
+    groups.start_date — настоящий DATE в Postgres, asyncpg ждёт datetime.date,
+    не строку). Вызывающие места (admin.py, roster_sheet.py) до сих пор
+    собирают дату как ISO-строку — конвертация здесь, а не у каждого из них."""
+    if v is None:
+        return None
+    if isinstance(v, dt.datetime):
+        return v.date()
+    if isinstance(v, dt.date):
+        return v
+    return dt.date.fromisoformat(str(v))
+
+
 # ----------------------------- группы -----------------------------
 
-async def upsert_group(name: str, start_date: str | None = None,
+async def upsert_group(name: str, start_date: str | dt.date | None = None,
                        lesson_time: str | None = None, shift: str | None = None,
                        fmt: str | None = None) -> int:
     """fmt — online/offline («Оффлайн/Онлайн» из шапки блока группы в ростере),
     как и остальные необязательные поля тут — обновляется, только если задан
     (пустое/None не затирает то, что уже сохранено)."""
+    start = _to_date(start_date)
     row = await q1("SELECT id FROM groups WHERE name = ?", name)
     if row:
-        if start_date:
-            await run("UPDATE groups SET start_date = ? WHERE id = ?", start_date, row["id"])
+        if start:
+            await run("UPDATE groups SET start_date = ? WHERE id = ?", start, row["id"])
         if lesson_time:
             await run("UPDATE groups SET lesson_time = ? WHERE id = ?", lesson_time, row["id"])
         if shift:
@@ -140,13 +149,13 @@ async def upsert_group(name: str, start_date: str | None = None,
         if fmt:
             await run("UPDATE groups SET format = ? WHERE id = ?", fmt, row["id"])
         return row["id"]
-    return await run(
+    return await insert_id(
         "INSERT INTO groups (name, start_date, lesson_time, shift, format) VALUES (?, ?, ?, ?, ?)",
-        name, start_date, lesson_time, shift or "evening", fmt,
+        name, start, lesson_time, shift or "evening", fmt,
     )
 
 
-async def groups(active_only: bool = True) -> list[aiosqlite.Row]:
+async def groups(active_only: bool = True) -> list[asyncpg.Record]:
     """По умолчанию только незавершённые группы (см. _group_finished) — так
     задумано везде, где строится список/кнопки выбора группы: у инлайн-кнопок
     есть лимит, и в куче старых групп нужную не найти. active_only=False —
@@ -157,7 +166,7 @@ async def groups(active_only: bool = True) -> list[aiosqlite.Row]:
     return rows
 
 
-async def group(group_id: int) -> Optional[aiosqlite.Row]:
+async def group(group_id: int) -> Optional[asyncpg.Record]:
     return await q1("SELECT * FROM groups WHERE id = ?", group_id)
 
 
@@ -206,7 +215,7 @@ async def group_lesson_window(group_id: int, day_index: int) -> Optional[tuple[d
     day = _day_by_index(day_index)
     if not day:
         return None
-    start_date = dt.date.fromisoformat(g["start_date"])
+    start_date = g["start_date"]  # уже datetime.date — колонка groups.start_date типа DATE
     date = start_date + dt.timedelta(days=int(day["offset_days"]))
     hh, mm = _lesson_start_hm(g, day)
     start = dt.datetime(date.year, date.month, date.day, hh, mm, tzinfo=settings.tz)
@@ -220,7 +229,7 @@ async def group_lesson_datetime(group_id: int, day_index: int) -> Optional[dt.da
     return window[0] if window else None
 
 
-async def _group_finished(g: aiosqlite.Row) -> bool:
+async def _group_finished(g: asyncpg.Record) -> bool:
     """Группа считается завершённой, когда конец последнего дня курса
     (LAST_DAY_INDEX, сейчас день 9 — хакатон) уже в прошлом. Группа без
     start_date ещё не начата — не завершена. Никакого отдельного флага в
@@ -286,29 +295,29 @@ async def add_student(group_id: int, full_name: str, class_school: str | None = 
     return row["id"]
 
 
-async def students(group_id: int, active_only: bool = True) -> list[aiosqlite.Row]:
+async def students(group_id: int, active_only: bool = True) -> list[asyncpg.Record]:
     sql = "SELECT * FROM students WHERE group_id = ?"
     if active_only:
-        sql += " AND active = 1"
+        sql += " AND active"
     return await q(sql + " ORDER BY full_name", group_id)
 
 
-async def student(student_id: int) -> Optional[aiosqlite.Row]:
+async def student(student_id: int) -> Optional[asyncpg.Record]:
     return await q1("SELECT * FROM students WHERE id = ?", student_id)
 
 
 # ----------------------------- детский бот: привязка аккаунта -----------------------------
 
-async def student_by_tg(tg_user_id: int) -> Optional[aiosqlite.Row]:
+async def student_by_tg(tg_user_id: int) -> Optional[asyncpg.Record]:
     return await q1("SELECT * FROM students WHERE tg_user_id = ?", tg_user_id)
 
 
-async def students_by_phone(phone: str) -> list[aiosqlite.Row]:
+async def students_by_phone(phone: str) -> list[asyncpg.Record]:
     """Активные ученики с таким номером — обычно один, но телефон бывает
     семейным (номер родителя на двоих детей), поэтому список, а не одна
     запись: вызывающий код должен уметь предложить выбор."""
     return await q(
-        "SELECT * FROM students WHERE phone = ? AND active = 1 ORDER BY full_name",
+        "SELECT * FROM students WHERE phone = ? AND active ORDER BY full_name",
         norm_phone(phone),
     )
 
@@ -337,7 +346,7 @@ async def save_kid_feedback(student_id: int, group_id: int, day_index: int,
         "DELETE FROM kid_feedback WHERE student_id = ? AND day_index = ?",
         student_id, day_index,
     )
-    return await run(
+    return await insert_id(
         """INSERT INTO kid_feedback (student_id, group_id, day_index, rating, text, source)
            VALUES (?, ?, ?, ?, ?, ?)""",
         student_id, group_id, day_index, rating, text, source,
@@ -349,7 +358,7 @@ async def kid_feedback_done(student_id: int, day_index: int) -> bool:
                      student_id, day_index)) is not None
 
 
-async def group_kid_feedback(group_id: int, day_index: int | None = None) -> list[aiosqlite.Row]:
+async def group_kid_feedback(group_id: int, day_index: int | None = None) -> list[asyncpg.Record]:
     """Для менторов/админа: отзывы без имени ученика — только день, оценка,
     текст. Столбца full_name в выборке нет намеренно, см. докстринг выше."""
     sql = "SELECT day_index, rating, text, source, created_at FROM kid_feedback WHERE group_id = ?"
@@ -364,7 +373,9 @@ async def kid_feedback_stats(group_id: int) -> dict[int, dict]:
     """По каждому дню: сколько отзывов и средняя оценка (без текста и без
     ученика — только числа, для сводки /overview у админа)."""
     rows = await q(
-        """SELECT day_index, COUNT(*) AS n, AVG(rating) AS avg_rating
+        # AVG(integer) в Postgres -> numeric (decimal.Decimal), а не float,
+        # как у SQLite — ::float8 возвращает тот же тип, что и раньше.
+        """SELECT day_index, COUNT(*) AS n, AVG(rating)::float8 AS avg_rating
            FROM kid_feedback WHERE group_id = ? GROUP BY day_index""",
         group_id,
     )
@@ -379,7 +390,7 @@ async def kid_feedback_stats(group_id: int) -> dict[int, dict]:
 # намеренно (см. обсуждение с заказчиком) — сузить до одной группы можно
 # будет отдельной правкой, тронув только join_hack_team.
 
-async def hack_team_of_student(student_id: int) -> Optional[aiosqlite.Row]:
+async def hack_team_of_student(student_id: int) -> Optional[asyncpg.Record]:
     return await q1(
         """SELECT t.* FROM hack_teams t
            JOIN hack_team_members m ON m.team_id = t.id
@@ -388,11 +399,11 @@ async def hack_team_of_student(student_id: int) -> Optional[aiosqlite.Row]:
     )
 
 
-async def hack_team_by_code(join_code: str) -> Optional[aiosqlite.Row]:
+async def hack_team_by_code(join_code: str) -> Optional[asyncpg.Record]:
     return await q1("SELECT * FROM hack_teams WHERE join_code = ?", join_code)
 
 
-async def hack_team_members(team_id: int) -> list[aiosqlite.Row]:
+async def hack_team_members(team_id: int) -> list[asyncpg.Record]:
     return await q(
         """SELECT s.* FROM students s
            JOIN hack_team_members m ON m.student_id = s.id
@@ -409,7 +420,7 @@ async def _sync_student_team(student_id: int, team_name: str | None) -> None:
 
 async def create_hack_team(name: str, case_name: str | None, leader_id: int,
                            join_code: str) -> int:
-    team_id = await run(
+    team_id = await insert_id(
         "INSERT INTO hack_teams (name, case_name, leader_id, join_code) VALUES (?, ?, ?, ?)",
         name, case_name, leader_id, join_code,
     )
@@ -421,7 +432,8 @@ async def create_hack_team(name: str, case_name: str | None, leader_id: int,
 
 async def join_hack_team(team_id: int, student_id: int) -> None:
     await run(
-        "INSERT OR IGNORE INTO hack_team_members (team_id, student_id) VALUES (?, ?)",
+        "INSERT INTO hack_team_members (team_id, student_id) VALUES (?, ?) "
+        "ON CONFLICT (team_id, student_id) DO NOTHING",
         team_id, student_id,
     )
     team = await q1("SELECT name FROM hack_teams WHERE id = ?", team_id)
@@ -436,7 +448,7 @@ async def leave_hack_team(student_id: int) -> None:
 
 # ----------------------------- менторы -----------------------------
 
-async def roster_lookup(phone: str) -> Optional[aiosqlite.Row]:
+async def roster_lookup(phone: str) -> Optional[asyncpg.Record]:
     return await q1("SELECT * FROM roster WHERE phone = ?", norm_phone(phone))
 
 
@@ -450,7 +462,7 @@ async def add_to_roster(phone: str, full_name: str, group_id: int | None,
              group_id  = excluded.group_id,
              is_admin  = excluded.is_admin,
              is_mentor = excluded.is_mentor""",
-        norm_phone(phone), full_name, group_id, int(is_admin), int(is_mentor),
+        norm_phone(phone), full_name, group_id, bool(is_admin), bool(is_mentor),
     )
 
 
@@ -464,41 +476,41 @@ async def is_first_run() -> bool:
 
 
 async def set_admin(tg_user_id: int, value: bool = True) -> bool:
-    cur = await conn().execute("UPDATE mentors SET is_admin = ? WHERE tg_user_id = ?",
-                               (int(value), tg_user_id))
-    await conn().commit()
-    return cur.rowcount > 0
+    n = await run("UPDATE mentors SET is_admin = ? WHERE tg_user_id = ?",
+                  bool(value), tg_user_id)
+    return n > 0
 
 
 async def set_mentor(tg_user_id: int, value: bool = True) -> bool:
-    cur = await conn().execute("UPDATE mentors SET is_mentor = ? WHERE tg_user_id = ?",
-                               (int(value), tg_user_id))
-    await conn().commit()
-    return cur.rowcount > 0
+    n = await run("UPDATE mentors SET is_mentor = ? WHERE tg_user_id = ?",
+                  bool(value), tg_user_id)
+    return n > 0
 
 
-async def mentor_by_phone(phone: str) -> Optional[aiosqlite.Row]:
+async def mentor_by_phone(phone: str) -> Optional[asyncpg.Record]:
     return await q1("SELECT * FROM mentors WHERE phone = ?", norm_phone(phone))
 
 
-async def mentor_by_tg(tg_user_id: int) -> Optional[aiosqlite.Row]:
+async def mentor_by_tg(tg_user_id: int) -> Optional[asyncpg.Record]:
     return await q1("SELECT * FROM mentors WHERE tg_user_id = ?", tg_user_id)
 
 
 async def register_mentor(tg_user_id: int, phone: str, full_name: str,
                           is_admin: bool = False, is_mentor: bool = True) -> int:
-    """is_admin/is_mentor независимы и только «добавляются»: MAX с уже
-    сохранённым значением — повторная регистрация (например, по ссылке
-    администратора) никогда не отбирает роль, выданную раньше."""
+    """is_admin/is_mentor независимы и только «добавляются»: GREATEST с уже
+    сохранённым значением (Postgres-эквивалент SQLite-шного многоаргументного
+    MAX(); булевы false < true, так что это ИЛИ) — повторная регистрация
+    (например, по ссылке администратора) никогда не отбирает роль, выданную
+    раньше."""
     await run(
         """INSERT INTO mentors (tg_user_id, phone, full_name, is_admin, is_mentor)
            VALUES (?, ?, ?, ?, ?)
            ON CONFLICT(tg_user_id) DO UPDATE SET
              phone     = excluded.phone,
              full_name = excluded.full_name,
-             is_admin  = MAX(mentors.is_admin, excluded.is_admin),
-             is_mentor = MAX(mentors.is_mentor, excluded.is_mentor)""",
-        tg_user_id, norm_phone(phone), full_name, int(is_admin), int(is_mentor),
+             is_admin  = GREATEST(mentors.is_admin, excluded.is_admin),
+             is_mentor = GREATEST(mentors.is_mentor, excluded.is_mentor)""",
+        tg_user_id, norm_phone(phone), full_name, bool(is_admin), bool(is_mentor),
     )
     row = await q1("SELECT id FROM mentors WHERE tg_user_id = ?", tg_user_id)
     return row["id"]
@@ -506,12 +518,13 @@ async def register_mentor(tg_user_id: int, phone: str, full_name: str,
 
 async def link_mentor_group(mentor_id: int, group_id: int) -> None:
     await run(
-        "INSERT OR IGNORE INTO mentor_groups (mentor_id, group_id) VALUES (?, ?)",
+        "INSERT INTO mentor_groups (mentor_id, group_id) VALUES (?, ?) "
+        "ON CONFLICT (mentor_id, group_id) DO NOTHING",
         mentor_id, group_id,
     )
 
 
-async def mentor_groups(mentor_id: int, active_only: bool = True) -> list[aiosqlite.Row]:
+async def mentor_groups(mentor_id: int, active_only: bool = True) -> list[asyncpg.Record]:
     """См. groups(): по умолчанию ментор видит только свои незавершённые группы."""
     rows = await q(
         """SELECT g.* FROM groups g
@@ -524,25 +537,25 @@ async def mentor_groups(mentor_id: int, active_only: bool = True) -> list[aiosql
     return rows
 
 
-async def group_mentors(group_id: int) -> list[aiosqlite.Row]:
-    """Только действующие менторы группы (is_mentor=1) — админ-организатор,
+async def group_mentors(group_id: int) -> list[asyncpg.Record]:
+    """Только действующие менторы группы (is_mentor=true) — админ-организатор,
     который лишь привязан административно, сюда не попадает."""
     return await q(
         """SELECT m.* FROM mentors m
            JOIN mentor_groups mg ON mg.mentor_id = m.id
-           WHERE mg.group_id = ? AND m.is_mentor = 1""",
+           WHERE mg.group_id = ? AND m.is_mentor""",
         group_id,
     )
 
 
-async def all_mentor_group_pairs() -> list[aiosqlite.Row]:
+async def all_mentor_group_pairs() -> list[asyncpg.Record]:
     return await q(
         """SELECT m.id AS mentor_id, m.tg_user_id, m.full_name AS mentor_name,
                   g.id AS group_id, g.name AS group_name, g.start_date
            FROM mentor_groups mg
            JOIN mentors m ON m.id = mg.mentor_id
            JOIN groups  g ON g.id = mg.group_id
-           WHERE g.start_date IS NOT NULL AND m.is_mentor = 1"""
+           WHERE g.start_date IS NOT NULL AND m.is_mentor"""
     )
 
 
@@ -558,7 +571,7 @@ async def open_session(mentor_id: int, group_id: int, day_index: int,
     )
     if row:
         return row["id"]
-    return await run(
+    return await insert_id(
         "INSERT INTO sessions (mentor_id, group_id, day_index, kind) VALUES (?, ?, ?, ?)",
         mentor_id, group_id, day_index, kind,
     )
@@ -566,7 +579,7 @@ async def open_session(mentor_id: int, group_id: int, day_index: int,
 
 async def finish_session(session_id: int) -> None:
     await run(
-        "UPDATE sessions SET status = 'done', finished_at = datetime('now') WHERE id = ?",
+        "UPDATE sessions SET status = 'done', finished_at = now() WHERE id = ?",
         session_id,
     )
 
@@ -584,7 +597,7 @@ async def save_answer(session_id: int, group_id: int, day_index: int,
                       question_key: str, question_text: str, maps_to: str | None,
                       student_id: int | None, value: str | None, text: str | None,
                       source: str) -> int:
-    return await run(
+    return await insert_id(
         """INSERT INTO answers
              (session_id, group_id, day_index, student_id, question_key,
               question_text, maps_to, value, text, source)
@@ -600,17 +613,17 @@ async def update_answer(answer_id: int, text: str | None, source: str) -> None:
               text, source, answer_id)
 
 
-async def answer(answer_id: int) -> Optional[aiosqlite.Row]:
+async def answer(answer_id: int) -> Optional[asyncpg.Record]:
     return await q1("SELECT * FROM answers WHERE id = ?", answer_id)
 
 
-async def student_answers(student_id: int) -> list[aiosqlite.Row]:
+async def student_answers(student_id: int) -> list[asyncpg.Record]:
     return await q(
         "SELECT * FROM answers WHERE student_id = ? ORDER BY day_index, id", student_id
     )
 
 
-async def group_answers(group_id: int) -> list[aiosqlite.Row]:
+async def group_answers(group_id: int) -> list[asyncpg.Record]:
     return await q(
         "SELECT * FROM answers WHERE group_id = ? AND student_id IS NULL ORDER BY day_index, id",
         group_id,
@@ -678,14 +691,17 @@ async def answers_count(session_id: int) -> int:
 
 # ----------------------------- характеристики -----------------------------
 
-async def save_characteristic(student_id: int, payload_json: str, html_path: str) -> int:
-    return await run(
+async def save_characteristic(student_id: int, payload: Any, html_path: str) -> int:
+    """payload — Python-объект (dict/list из llm.generate), не строка: пул
+    настроен на jsonb-кодек (см. _init_connection), сериализация/десериализация
+    симметричны и происходят на границе asyncpg, а не у каждого вызывающего."""
+    return await insert_id(
         "INSERT INTO characteristics (student_id, payload, html_path) VALUES (?, ?, ?)",
-        student_id, payload_json, html_path,
+        student_id, payload, html_path,
     )
 
 
-async def latest_characteristic(student_id: int) -> Optional[aiosqlite.Row]:
+async def latest_characteristic(student_id: int) -> Optional[asyncpg.Record]:
     return await q1(
         "SELECT * FROM characteristics WHERE student_id = ? ORDER BY id DESC LIMIT 1",
         student_id,
@@ -721,37 +737,36 @@ async def create_invite(token: str, group_id: int, created_by: int | None,
     )
 
 
-async def invite_by_token(token: str) -> Optional[aiosqlite.Row]:
+async def invite_by_token(token: str) -> Optional[asyncpg.Record]:
     return await q1("SELECT * FROM invites WHERE token = ?", token)
 
 
-async def active_invite(token: str) -> Optional[aiosqlite.Row]:
+async def active_invite(token: str) -> Optional[asyncpg.Record]:
     """Только не отозванная ссылка — то, что реально пускает регистрацию."""
-    return await q1("SELECT * FROM invites WHERE token = ? AND revoked = 0", token)
+    return await q1("SELECT * FROM invites WHERE token = ? AND NOT revoked", token)
 
 
 async def revoke_invite(token: str) -> bool:
-    cur = await conn().execute("UPDATE invites SET revoked = 1 WHERE token = ?", (token,))
-    await conn().commit()
-    return cur.rowcount > 0
+    n = await run("UPDATE invites SET revoked = true WHERE token = ?", token)
+    return n > 0
 
 
-async def group_invites(group_id: int) -> list[aiosqlite.Row]:
+async def group_invites(group_id: int) -> list[asyncpg.Record]:
     return await q("SELECT * FROM invites WHERE group_id = ? ORDER BY created_at DESC", group_id)
 
 
-async def active_student_invite(student_id: int) -> Optional[aiosqlite.Row]:
+async def active_student_invite(student_id: int) -> Optional[asyncpg.Record]:
     """Ещё не использованная и не отозванная персональная ссылка ученика —
     чтобы повторный вызов «Ссылки для учеников» не плодил новые токены на
     того же человека."""
     return await q1(
-        "SELECT * FROM invites WHERE student_id = ? AND revoked = 0 AND used_by_tg IS NULL "
+        "SELECT * FROM invites WHERE student_id = ? AND NOT revoked AND used_by_tg IS NULL "
         "ORDER BY created_at DESC LIMIT 1",
         student_id,
     )
 
 
-def _one_time(invite: aiosqlite.Row) -> bool:
+def _one_time(invite: asyncpg.Record) -> bool:
     """Все ссылки одноразовые. Раньше групповая ссылка ментора (role='mentor',
     student_id NULL) была многоразовой — с переходом на Excel-импорт
     менторская ссылка стала просто одноразовым пропуском в бота (группа
@@ -762,7 +777,7 @@ def _one_time(invite: aiosqlite.Row) -> bool:
     return True
 
 
-def _invite_status(invite: Optional[aiosqlite.Row], tg_user_id: int) -> str:
+def _invite_status(invite: Optional[asyncpg.Record], tg_user_id: int) -> str:
     if invite is None:
         return "not_found"
     if invite["revoked"]:
@@ -790,13 +805,12 @@ async def claim_invite(token: str, tg_user_id: int) -> str:
     status = _invite_status(invite, tg_user_id)
     if status != "ok":
         return status
-    cur = await conn().execute(
-        "UPDATE invites SET used_by_tg = ?, used_at = datetime('now') "
+    n = await run(
+        "UPDATE invites SET used_by_tg = ?, used_at = now() "
         "WHERE token = ? AND used_by_tg IS NULL",
-        (tg_user_id, token),
+        tg_user_id, token,
     )
-    await conn().commit()
-    if cur.rowcount == 0:
+    if n == 0:
         # кто-то успел использовать её первым между чтением и записью
         return _invite_status(await invite_by_token(token), tg_user_id)
     return "ok"

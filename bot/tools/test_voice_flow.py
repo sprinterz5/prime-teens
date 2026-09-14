@@ -13,10 +13,14 @@ import os
 import sys
 
 sys.stdout.reconfigure(encoding="utf-8", errors="replace")
-os.environ["DB_PATH"] = "data/voiceflow.sqlite3"
 
+from tools._pgtest import TEST_DATABASE_URL  # noqa: E402
+
+os.environ["DATABASE_URL"] = TEST_DATABASE_URL
+
+from tools import _pgtest as pgtest  # noqa: E402
 from app import db  # noqa: E402
-from app.config import COURSE, settings  # noqa: E402
+from app.config import COURSE  # noqa: E402
 from app.handlers.checklist import _needs_confirm  # noqa: E402
 from app.stt import Transcript  # noqa: E402
 
@@ -69,7 +73,7 @@ async def main() -> None:
     COURSE["voice"]["confirm"] = "smart"
 
     print("\n--- переписывание ответа ---")
-    settings.db_path.unlink(missing_ok=True)
+    await pgtest.prepare()
     await db.init()
     gid = await db.upsert_group("Тест", "2026-08-03", "10:00")
     sid = await db.add_student(gid, "Образцова Аружан")
@@ -100,7 +104,6 @@ async def main() -> None:
         print(f"  id={r['id']} source={r['source']:5} text={r['text']!r}")
 
     await db.close()
-    settings.db_path.unlink(missing_ok=True)
     print("\n" + ("ВСЁ ОК" if all_ok else "ЕСТЬ ОШИБКИ"))
     sys.exit(0 if all_ok else 1)
 

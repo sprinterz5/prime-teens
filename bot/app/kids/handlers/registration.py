@@ -159,7 +159,7 @@ async def got_contact(message: Message, state: FSMContext) -> None:
     matches = await db.q(
         """SELECT s.*, g.name AS group_name FROM students s
            JOIN groups g ON g.id = s.group_id
-           WHERE s.phone = ? AND s.active = 1 ORDER BY s.full_name""",
+           WHERE s.phone = ? AND s.active ORDER BY s.full_name""",
         phone,
     )
     if not matches:

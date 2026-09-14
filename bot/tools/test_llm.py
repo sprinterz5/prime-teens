@@ -1,7 +1,8 @@
 """Живая проверка LLM на данных из smoke-БД: python -m tools.test_llm"""
 import asyncio, json, os, sys
 sys.stdout.reconfigure(encoding="utf-8", errors="replace")
-os.environ["DB_PATH"] = "data/smoke.sqlite3"
+from tools._pgtest import TEST_DATABASE_URL
+os.environ["DATABASE_URL"] = TEST_DATABASE_URL
 from app import db, llm, render
 from app.config import settings
 

@@ -68,10 +68,10 @@ async def _mentor_or_none(user_id: int, message: Message):
     return mentor
 
 
-def _today_day_index(start_date: str | None) -> int | None:
+def _today_day_index(start_date: dt.date | None) -> int | None:
     if not start_date:
         return None
-    offset = (dt.datetime.now(settings.tz).date() - dt.date.fromisoformat(start_date)).days
+    offset = (dt.datetime.now(settings.tz).date() - start_date).days
     for d in COURSE["days"]:
         if int(d["offset_days"]) == offset:
             return int(d["index"])

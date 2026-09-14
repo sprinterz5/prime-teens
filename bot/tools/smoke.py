@@ -14,10 +14,14 @@ import zipfile
 
 sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 os.environ["LLM_PROVIDER"] = "off"
-os.environ["DB_PATH"] = "data/smoke.sqlite3"
 
+from tools._pgtest import TEST_DATABASE_URL  # noqa: E402
+
+os.environ["DATABASE_URL"] = TEST_DATABASE_URL
+
+from tools import _pgtest as pgtest  # noqa: E402
 from app import db, dossier, flow  # noqa: E402
-from app.config import COURSE, settings  # noqa: E402
+from app.config import COURSE  # noqa: E402
 
 STUDENTS = [
     ("Ахметова Айя", "9 класс, НИШ", "Nova"),
@@ -93,7 +97,7 @@ def lesson_answers(day):
 
 
 async def main() -> None:
-    settings.db_path.unlink(missing_ok=True)
+    await pgtest.prepare()
     await db.init()
     start = (dt.date.today() - dt.timedelta(days=13)).isoformat()
     # Две смены — один и тот же старт и офсеты, разное время занятий.

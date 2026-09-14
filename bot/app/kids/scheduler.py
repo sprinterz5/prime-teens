@@ -27,7 +27,7 @@ def _due(now: dt.datetime, fire_at: dt.datetime, freshness: dt.timedelta) -> boo
 
 async def _linked_students(group_id: int) -> list:
     return await db.q(
-        "SELECT * FROM students WHERE group_id = ? AND active = 1 AND tg_user_id IS NOT NULL",
+        "SELECT * FROM students WHERE group_id = ? AND active AND tg_user_id IS NOT NULL",
         group_id,
     )
 

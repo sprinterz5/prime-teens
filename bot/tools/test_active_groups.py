@@ -20,14 +20,18 @@ import os
 import sys
 
 sys.stdout.reconfigure(encoding="utf-8", errors="replace")
-os.environ["DB_PATH"] = "data/test_active_groups.sqlite3"
 
+from tools._pgtest import TEST_DATABASE_URL  # noqa: E402
+
+os.environ["DATABASE_URL"] = TEST_DATABASE_URL
+
+from tools import _pgtest as pgtest  # noqa: E402
 from app import db  # noqa: E402
 from app.config import settings  # noqa: E402
 
 
 async def main() -> None:
-    settings.db_path.unlink(missing_ok=True)
+    await pgtest.prepare()
     await db.init()
     all_ok = True
 
@@ -103,7 +107,6 @@ async def main() -> None:
     all_ok &= ok
 
     await db.close()
-    settings.db_path.unlink(missing_ok=True)
     print("\n" + ("ВСЁ ОК" if all_ok else "ЕСТЬ ОШИБКИ"))
     sys.exit(0 if all_ok else 1)
 

@@ -741,7 +741,7 @@ async def overview_cmd(message: Message) -> None:
 
         cur_day = None
         if g["start_date"]:
-            offset = (now.date() - dt.date.fromisoformat(g["start_date"])).days
+            offset = (now.date() - g["start_date"]).days
             cur_day = next((d["index"] for d in COURSE["days"]
                             if int(d["offset_days"]) == offset), None)
 
@@ -777,7 +777,7 @@ async def broadcast(message: Message, command: CommandObject, bot: Bot) -> None:
         await message.answer("Формат: /broadcast текст сообщения")
         return
     # Только действующим менторам — чистый админ-организатор чек-листы не заполняет.
-    mentors = await db.q("SELECT tg_user_id FROM mentors WHERE is_mentor = 1")
+    mentors = await db.q("SELECT tg_user_id FROM mentors WHERE is_mentor")
     sent = 0
     for m in mentors:
         try:

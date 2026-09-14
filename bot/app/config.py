@@ -39,7 +39,10 @@ class Settings:
     sheets_sync_token: str = field(default_factory=lambda: _env("SHEETS_SYNC_TOKEN"))
     sheets_sync_hour: int = field(default_factory=lambda: int(_env("SHEETS_SYNC_HOUR", "3")))
 
-    db_path: Path = field(default_factory=lambda: ROOT / _env("DB_PATH", "data/bot.sqlite3"))
+    # Postgres, общий с Next.js-платформой (apps/web) — схему и миграции
+    # владеет Prisma (repo root prisma/schema.prisma), бот только читает/
+    # пишет через обычный SQL (app/db.py, asyncpg) и ничего не мигрирует сам.
+    database_url: str = field(default_factory=lambda: _env("DATABASE_URL"))
     media_dir: Path = field(default_factory=lambda: ROOT / _env("MEDIA_DIR", "data/media"))
     out_dir: Path = field(default_factory=lambda: ROOT / _env("OUT_DIR", "data/out"))
 
@@ -86,7 +89,7 @@ for _d in COURSE["days"]:
 
 DAYS_BY_INDEX: dict[int, dict] = {d["index"]: d for d in COURSE["days"]}
 
-for _p in (settings.db_path.parent, settings.media_dir, settings.out_dir):
+for _p in (settings.media_dir, settings.out_dir):
     _p.mkdir(parents=True, exist_ok=True)
 
 

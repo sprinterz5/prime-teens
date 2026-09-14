@@ -38,7 +38,10 @@ import tempfile
 from pathlib import Path
 
 sys.stdout.reconfigure(encoding="utf-8", errors="replace")
-os.environ["DB_PATH"] = "data/test_roster_sheet.sqlite3"
+
+from tools._pgtest import TEST_DATABASE_URL  # noqa: E402
+
+os.environ["DATABASE_URL"] = TEST_DATABASE_URL
 
 from app import roster_sheet  # noqa: E402
 
@@ -280,11 +283,11 @@ def test_orphan_student_no_group() -> None:
 async def test_end_to_end_xlsx() -> None:
     print("\n--- полный путь: .xlsx -> import_workbook -> SQLite ---")
     import openpyxl
+    from tools import _pgtest as pgtest
     from app import db
-    from app.config import settings
     from app.handlers import admin
 
-    settings.db_path.unlink(missing_ok=True)
+    await pgtest.prepare()
     await db.init()
 
     grid = build_grid()
@@ -303,7 +306,8 @@ async def test_end_to_end_xlsx() -> None:
         check("учеников: 7", report["students_count"] == 7)
 
         g = await db.q1("SELECT * FROM groups WHERE name = ?", "Группа 1")
-        check("группа в БД со стартом 2026-09-21", g and g["start_date"] == "2026-09-21")
+        # start_date из Postgres — datetime.date (колонка DATE), не строка.
+        check("группа в БД со стартом 2026-09-21", g and str(g["start_date"]) == "2026-09-21")
         check("группа в БД с форматом online", g and g["format"] == "online")
         check("группа в БД со сменой morning", g and g["shift"] == "morning")
 
@@ -329,7 +333,6 @@ async def test_end_to_end_xlsx() -> None:
         check("ментор в roster по-прежнему один", mentors_total == 1)
 
     await db.close()
-    settings.db_path.unlink(missing_ok=True)
 
 
 async def main() -> None:

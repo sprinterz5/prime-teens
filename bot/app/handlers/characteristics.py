@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 import asyncio
-import json
 import logging
 
 from aiogram import F, Router
@@ -110,8 +109,7 @@ async def _generate_and_send(message: Message, student_ids: list[int]) -> None:
                 mentors=", ".join(m["full_name"].split()[0] for m in mentors),
                 duration=f"{len(COURSE['days']) - 1} занятий, 2 недели + финальный хакатон",
             )
-            await db.save_characteristic(sid, json.dumps(data, ensure_ascii=False),
-                                         str(html_path))
+            await db.save_characteristic(sid, data, str(html_path))
 
             pdf = render.try_pdf(html_path)
             doc = pdf or html_path
