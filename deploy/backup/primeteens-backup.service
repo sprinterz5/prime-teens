@@ -1,0 +1,13 @@
+[Unit]
+Description=PrimeTeens - daily backup (Postgres + storage + bot data)
+
+[Service]
+Type=oneshot
+# Reads /opt/prime-teens/.env and dumps Postgres via pg_dump - simplest safe
+# option is running this as root rather than juggling extra sudoers rules
+# for a script that already touches DB credentials and the whole app dir.
+User=root
+# Optional: env file for BACKUP_REMOTE / BACKUP_AGE_RECIPIENT (off-site copy).
+# Safe to omit if you only want local backups.
+EnvironmentFile=-/etc/primeteens/backup.env
+ExecStart=/opt/prime-teens/deploy/backup/backup.sh

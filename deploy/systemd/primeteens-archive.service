@@ -1,0 +1,14 @@
+[Unit]
+Description=PrimeTeens - nightly archive job (compress drawings, export group PDFs)
+After=network-online.target postgresql.service primeteens-backup.service
+
+[Service]
+Type=oneshot
+User=primeteens
+Group=primeteens
+WorkingDirectory=/opt/prime-teens
+EnvironmentFile=/opt/prime-teens/.env
+Environment=NODE_ENV=production
+# Resolve `pnpm` via a login shell's PATH rather than hardcoding a path -
+# where corepack puts its shim varies by install method/distro.
+ExecStart=/bin/bash -lc 'pnpm archive:pending'

@@ -1,0 +1,11 @@
+[Unit]
+Description=PrimeTeens - monitoring/self-heal check (one run)
+
+[Service]
+Type=oneshot
+# Runs as root: it needs `systemctl restart` on other units for self-heal,
+# and reads /etc/primeteens/monitor.env. That's the simpler safe option here
+# over a narrow sudoers file for one script that already only does read-only
+# checks plus scoped restarts of three known units - see deploy/README.md.
+User=root
+ExecStart=/opt/prime-teens/deploy/monitor/monitor.sh

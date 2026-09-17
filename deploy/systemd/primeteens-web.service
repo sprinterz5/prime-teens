@@ -1,0 +1,27 @@
+[Unit]
+Description=PrimeTeens - Next.js web app
+After=network-online.target postgresql.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=primeteens
+Group=primeteens
+WorkingDirectory=/opt/prime-teens
+EnvironmentFile=/opt/prime-teens/.env
+Environment=NODE_ENV=production
+# Calling next's own JS entrypoint directly (instead of `pnpm start` / `next
+# start`) avoids depending on pnpm/npm being resolvable from a systemd unit's
+# minimal PATH.
+ExecStart=/usr/bin/node node_modules/next/dist/bin/next start -p 3000 -H 127.0.0.1
+Restart=on-failure
+RestartSec=5
+
+# Light sandboxing. WorkingDirectory (storage/, .next/) still needs to be
+# writable, everything else can stay read-only from this unit's point of view.
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+
+[Install]
+WantedBy=multi-user.target

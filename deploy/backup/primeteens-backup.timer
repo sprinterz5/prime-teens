@@ -1,0 +1,10 @@
+[Unit]
+Description=PrimeTeens - run daily backup at 03:30 Asia/Almaty
+
+[Timer]
+OnCalendar=*-*-* 03:30:00 Asia/Almaty
+Persistent=true
+RandomizedDelaySec=120
+
+[Install]
+WantedBy=timers.target
