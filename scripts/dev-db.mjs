@@ -5,6 +5,7 @@
 // Usage: node scripts/dev-db.mjs   (or `pnpm db:dev`)
 // Stop with Ctrl+C (SIGINT/SIGTERM) — data persists in .dev-db/ between runs.
 import EmbeddedPostgres from "embedded-postgres";
+import { existsSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -31,8 +32,13 @@ const pg = new EmbeddedPostgres({
 
 async function main() {
   console.log(`[dev-db] data dir: ${dataDir}`);
-  await pg.initialise();
-  console.log("[dev-db] cluster initialised (or already existed)");
+  // initdb refuses a non-empty directory, so only initialise on the first run.
+  if (existsSync(path.join(dataDir, "PG_VERSION"))) {
+    console.log("[dev-db] existing cluster found");
+  } else {
+    await pg.initialise();
+    console.log("[dev-db] cluster initialised");
+  }
 
   await pg.start();
   console.log(`[dev-db] postgres listening on 127.0.0.1:${PORT}`);

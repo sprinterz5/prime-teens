@@ -23,7 +23,7 @@ export async function POST(request: Request) {
       const student = await prisma.student.findUnique({
         where: { tgUserId: BigInt(verified.result.user.id) }
       });
-      if (student) {
+      if (student?.active) {
         const res = NextResponse.json({ ok: true, role: "student" as const });
         applySessionCookie(
           res,

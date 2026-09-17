@@ -1,6 +1,7 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
 import { cookies } from "next/headers";
 import type { NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
 
 export const SESSION_COOKIE = "wb_session";
 const MAX_AGE_SECONDS = 30 * 24 * 60 * 60; // 30 days
@@ -15,12 +16,21 @@ export type SessionPayload = {
   exp: number; // unix seconds
 };
 
+const MIN_PROD_SECRET_LENGTH = 32;
+
 function getSecret(): string {
   const secret = process.env.SESSION_SECRET;
   if (!secret) {
     throw new Error("SESSION_SECRET is not set — required to sign/verify session cookies");
   }
+  if (process.env.NODE_ENV === "production" && secret.length < MIN_PROD_SECRET_LENGTH) {
+    throw new Error(`SESSION_SECRET must be at least ${MIN_PROD_SECRET_LENGTH} characters in production`);
+  }
   return secret;
+}
+
+function devLoginEnabled(): boolean {
+  return process.env.NODE_ENV !== "production" && process.env.DEV_LOGIN === "1";
 }
 
 function base64url(input: Buffer | string): string {
@@ -62,10 +72,43 @@ export function decodeSession(token: string | undefined | null): SessionPayload 
   }
 }
 
-/** Read + verify the session cookie for the current request (server components, route handlers). */
+/**
+ * Read + verify the session cookie for the current request (server components, route handlers).
+ * The cookie only proves who logged in; the account is re-checked against the database on every
+ * request so that unlinking a Telegram account, deactivating a student or changing a mentor's
+ * admin flag takes effect immediately instead of after the cookie expires.
+ */
 export async function getSession(): Promise<SessionPayload | null> {
   const jar = await cookies();
-  return decodeSession(jar.get(SESSION_COOKIE)?.value);
+  const payload = decodeSession(jar.get(SESSION_COOKIE)?.value);
+  if (!payload) return null;
+  return refreshFromDatabase(payload);
+}
+
+async function refreshFromDatabase(payload: SessionPayload): Promise<SessionPayload | null> {
+  // Sessions minted by /dev/login may carry a placeholder tg id; they are never valid in production.
+  const isTelegramId = /^\d+$/.test(payload.tgUserId);
+  if (!isTelegramId && !devLoginEnabled()) return null;
+
+  if (payload.role === "student") {
+    if (!payload.studentId) return null;
+    const student = await prisma.student.findUnique({
+      where: { id: payload.studentId },
+      select: { tgUserId: true, active: true }
+    });
+    if (!student || !student.active) return null;
+    if (isTelegramId && String(student.tgUserId) !== payload.tgUserId) return null;
+    return payload;
+  }
+
+  if (!payload.mentorId) return null;
+  const mentor = await prisma.mentor.findUnique({
+    where: { id: payload.mentorId },
+    select: { tgUserId: true, isAdmin: true }
+  });
+  if (!mentor) return null;
+  if (isTelegramId && String(mentor.tgUserId) !== payload.tgUserId) return null;
+  return { ...payload, role: mentor.isAdmin ? "admin" : "mentor" };
 }
 
 export function newSessionPayload(input: Omit<SessionPayload, "exp">): SessionPayload {
@@ -85,5 +128,11 @@ export function applySessionCookie(response: NextResponse, payload: SessionPaylo
 }
 
 export function clearSessionCookie(response: NextResponse): void {
-  response.cookies.set(SESSION_COOKIE, "", { path: "/", maxAge: 0 });
+  response.cookies.set(SESSION_COOKIE, "", {
+    httpOnly: true,
+    sameSite: "lax",
+    secure: process.env.NODE_ENV === "production",
+    path: "/",
+    maxAge: 0
+  });
 }
