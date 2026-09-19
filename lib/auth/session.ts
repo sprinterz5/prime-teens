@@ -111,6 +111,41 @@ async function refreshFromDatabase(payload: SessionPayload): Promise<SessionPayl
   return { ...payload, role: mentor.isAdmin ? "admin" : "mentor" };
 }
 
+// Short-lived, studentId-bound tokens for /workbook/print — the offline
+// archive-export script (scripts/archive-group.ts) can't hold a browser
+// session cookie, so it mints one of these and passes it as ?token=... The
+// print route accepts either this token OR a live admin session. Same HMAC
+// machinery as the session cookie above, just a smaller payload and a much
+// shorter TTL (minutes, not days).
+export type PrintTokenPayload = { studentId: number; exp: number };
+
+export function encodePrintToken(studentId: number, ttlSeconds = 300): string {
+  const body = base64url(JSON.stringify({ studentId, exp: Math.floor(Date.now() / 1000) + ttlSeconds }));
+  return `${body}.${sign(body)}`;
+}
+
+/** Verifies signature, expiry, AND that the token was minted for this exact studentId. */
+export function verifyPrintToken(token: string | undefined | null, studentId: number): boolean {
+  if (!token) return false;
+  const dot = token.lastIndexOf(".");
+  if (dot < 0) return false;
+  const body = token.slice(0, dot);
+  const sig = token.slice(dot + 1);
+  const expected = sign(body);
+
+  const sigBuf = Buffer.from(sig);
+  const expectedBuf = Buffer.from(expected);
+  if (sigBuf.length !== expectedBuf.length || !timingSafeEqual(sigBuf, expectedBuf)) return false;
+
+  try {
+    const payload = JSON.parse(Buffer.from(body, "base64url").toString("utf8")) as PrintTokenPayload;
+    if (typeof payload.exp !== "number" || payload.exp < Math.floor(Date.now() / 1000)) return false;
+    return payload.studentId === studentId;
+  } catch {
+    return false;
+  }
+}
+
 export function newSessionPayload(input: Omit<SessionPayload, "exp">): SessionPayload {
   return { ...input, exp: Math.floor(Date.now() / 1000) + MAX_AGE_SECONDS };
 }

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import type { SessionPayload } from "@/lib/auth/session";
+import { getSession, verifyPrintToken, type SessionPayload } from "@/lib/auth/session";
 
 export function unauthorized(message = "Не авторизовано") {
   return NextResponse.json({ ok: false, message }, { status: 401 });
@@ -58,4 +58,27 @@ export async function visibleStudentIds(session: SessionPayload, groupId?: numbe
 export async function canAccessGroup(session: SessionPayload, groupId: number): Promise<boolean> {
   const groups = await visibleGroupIds(session);
   return groups === "all" || groups.includes(groupId);
+}
+
+export type ReadAuthResult = { ok: true } | { ok: false; status: 401 | 403 };
+
+/**
+ * Authorizes a read of one student's workbook data (entries/drawings/stream
+ * GET routes) either by a live session (student themself, or a mentor/admin
+ * with access — same rule as canReadStudent) OR a short-lived print token
+ * scoped to exactly this studentId (?token=..., see
+ * lib/auth/session.ts:verifyPrintToken). The token path exists because
+ * /workbook/print (see app/workbook/print/route.ts) is rendered by a
+ * headless Playwright context during PDF export (scripts/archive-group.ts),
+ * which has no session cookie — the print route forwards its own token to
+ * the client (window.__WB__.token), which appends it to these same API
+ * calls (see PLATFORM_JS in workbook/src/build_web.py).
+ */
+export async function authorizeStudentRead(request: Request, studentId: number): Promise<ReadAuthResult> {
+  const session = await getSession();
+  if (session) {
+    return (await canReadStudent(session, studentId)) ? { ok: true } : { ok: false, status: 403 };
+  }
+  const token = new URL(request.url).searchParams.get("token");
+  return verifyPrintToken(token, studentId) ? { ok: true } : { ok: false, status: 401 };
 }

@@ -1,5 +1,4 @@
-import { getSession } from "@/lib/auth/session";
-import { canReadStudent, forbidden, unauthorized } from "@/lib/auth/authorize";
+import { authorizeStudentRead, forbidden, unauthorized } from "@/lib/auth/authorize";
 import { subscribeStudent, type WorkbookNotification } from "@/lib/realtime";
 
 export const runtime = "nodejs";
@@ -14,14 +13,12 @@ function sseFrame(event: string, data: unknown): string {
 }
 
 export async function GET(request: Request, { params }: { params: Promise<{ studentId: string }> }) {
-  const session = await getSession();
-  if (!session) return unauthorized();
-
   const studentId = Number((await params).studentId);
   if (!Number.isInteger(studentId)) {
     return new Response("Некорректный studentId", { status: 400 });
   }
-  if (!(await canReadStudent(session, studentId))) return forbidden();
+  const auth = await authorizeStudentRead(request, studentId);
+  if (!auth.ok) return auth.status === 401 ? unauthorized() : forbidden();
 
   const encoder = new TextEncoder();
   let unsubscribe: (() => void) | null = null;

@@ -825,3 +825,15 @@ async def mark_sent(key: str) -> bool:
         return True
     except Exception:
         return False
+
+
+# ----------------------------- realtime (веб-платформа) -----------------------------
+
+async def notify_workbook(payload: dict) -> None:
+    """pg_notify на тот же канал 'workbook', что слушает lib/realtime.ts —
+    так изменения, сделанные ботом (пока только архивация потока, см.
+    scheduler.archive_lock), долетают до открытых вкладок тетради живьём,
+    без перезагрузки. Ключи payload — camelCase (studentId/groupId/...),
+    как их ждёт JSON.parse на стороне Next.js/клиента; держите форму в
+    синхроне с WorkbookNotification в lib/realtime.ts."""
+    await pool().execute("SELECT pg_notify('workbook', $1)", json.dumps(payload))

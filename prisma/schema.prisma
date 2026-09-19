@@ -90,6 +90,25 @@ model Group {
   format     String?
   createdAt  DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
 
+  // «Завершить поток» (see PLAN in the archive-group feature): once set, every
+  // workbook write for this group's students is refused (409) and the
+  // workbook client renders read-only. Set either by an admin (manual, e.g.
+  // to close a stream early) or automatically by the bot's archive-lock job
+  // (bot/app/scheduler.py:archive_lock) once the course's last day
+  // (hackathon) is over — see bot/app/db.py:_group_finished, the single
+  // source of truth for "is this group's course over".
+  archivedAt DateTime? @map("archived_at") @db.Timestamptz(6)
+  // Set by "Вернуть в работу" (admin unarchive) and never cleared again by
+  // anything except another manual archive. Stops the bot's auto-lock job
+  // from re-archiving a group an admin deliberately reopened.
+  archiveReopened Boolean @default(false) @map("archive_reopened")
+  // Planned/actual end of the course's last day, kept fresh by the bot's
+  // archive-lock job (bot/app/db.py:group_lesson_window) every ~5 minutes.
+  // Powers the mentor dashboard's "closes at" hint before the group is
+  // actually archived. Null until the bot has computed it at least once
+  // (e.g. group has no start_date yet).
+  endsAt DateTime? @map("ends_at") @db.Timestamptz(6)
+
   students      Student[]
   kidFeedback   KidFeedback[]
   rosterEntries Roster[]

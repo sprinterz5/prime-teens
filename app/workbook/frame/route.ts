@@ -2,6 +2,7 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { getSession } from "@/lib/auth/session";
 import { canReadStudent } from "@/lib/auth/authorize";
+import { getStudentGroupInfo } from "@/lib/workbook/archive";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -29,19 +30,24 @@ export async function GET(request: Request) {
 
   const url = new URL(request.url);
   let studentId: number;
-  let mode: "edit" | "readonly";
 
   if (session.role === "student") {
     if (!session.studentId) return errorPage(400, "У сессии нет studentId.");
     studentId = session.studentId;
-    mode = "edit";
   } else {
     const raw = url.searchParams.get("studentId");
     studentId = Number(raw);
     if (!raw || !Number.isInteger(studentId)) return errorPage(400, "Не указан studentId.");
-    mode = "readonly";
     if (!(await canReadStudent(session, studentId))) return errorPage(403, "Доступ запрещён.");
   }
+
+  // A student whose group has been archived ("Завершить поток") gets the
+  // same readonly rendering a mentor sees — inputs disabled, drawings loaded
+  // but not editable — plus a "read only" notice (see __WB__.archived below).
+  const groupInfo = await getStudentGroupInfo(studentId);
+  if (!groupInfo) return errorPage(404, "Студент не найден.");
+  const archived = !!groupInfo.archivedAt;
+  const mode: "edit" | "readonly" = session.role === "student" && !archived ? "edit" : "readonly";
 
   let html: string;
   try {
@@ -50,7 +56,7 @@ export async function GET(request: Request) {
     return errorPage(500, "Тетрадь не собрана: нет public/workbook/app.html (запустите build_web.py).");
   }
 
-  const config = JSON.stringify({ mode, studentId, apiBase: "/api/workbook" });
+  const config = JSON.stringify({ mode, studentId, apiBase: "/api/workbook", archived });
   const injected = html.replace("<body>", `<body><script>window.__WB__=${config};</script>`);
 
   return new Response(injected, {

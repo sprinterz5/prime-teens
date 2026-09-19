@@ -1,22 +1,19 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getSession } from "@/lib/auth/session";
-import { canReadStudent, forbidden, unauthorized } from "@/lib/auth/authorize";
+import { authorizeStudentRead, forbidden, unauthorized } from "@/lib/auth/authorize";
 import { manifest } from "@/lib/workbook/manifest";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-export async function GET(_request: Request, { params }: { params: Promise<{ studentId: string }> }) {
-  const session = await getSession();
-  if (!session) return unauthorized();
-
+export async function GET(request: Request, { params }: { params: Promise<{ studentId: string }> }) {
   const studentId = Number((await params).studentId);
   if (!Number.isInteger(studentId)) {
     return NextResponse.json({ ok: false, message: "Некорректный studentId" }, { status: 400 });
   }
 
-  if (!(await canReadStudent(session, studentId))) return forbidden();
+  const auth = await authorizeStudentRead(request, studentId);
+  if (!auth.ok) return auth.status === 401 ? unauthorized() : forbidden();
 
   const [rows, drawingRows] = await Promise.all([
     prisma.workbookEntry.findMany({ where: { studentId } }),

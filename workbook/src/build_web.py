@@ -506,10 +506,10 @@ function wbSetupCanvas(cv, opts){
   }
 
   function loadBase(src){
-    if(!src){ baseImg = null; renderAll(); return; }
+    if(!src){ baseImg = null; renderAll(); if(opts.onLoaded) opts.onLoaded(); return; }
     var img = new Image();
-    img.onload = function(){ baseImg = img; renderAll(); };
-    img.onerror = function(){ baseImg = null; renderAll(); };
+    img.onload = function(){ baseImg = img; renderAll(); if(opts.onLoaded) opts.onLoaded(); };
+    img.onerror = function(){ baseImg = null; renderAll(); if(opts.onLoaded) opts.onLoaded(); };
     img.src = src;
   }
 
@@ -694,6 +694,20 @@ PLATFORM_CSS = """
 /* ============ ПЛАТФОРМЕННЫЙ СЛОЙ (поверх WEB_CSS) ============ */
 .topbar .netstatus{ font-size:12px; color:#ffcf7a; opacity:0; transition:opacity .25s; }
 .topbar .netstatus.on{ opacity:1; }
+/* «Поток завершён» — спокойный статус, в отличие от оранжевого netstatus (это не ошибка) */
+.topbar .archived{ font-size:12px; color:#bcd3e8; opacity:0; transition:opacity .25s; }
+.topbar .archived.on{ opacity:1; }
+.wb-locked canvas{ pointer-events:none; }
+
+/* Печатный снимок (/workbook/print, см. app/workbook/print/route.ts): та же
+   разметка, что и @media print ниже (WEB_CSS), но включается явным классом —
+   так страница выглядит как печатная версия и в обычном браузере, не только
+   под Chromium'ом page.pdf(), который сам подставляет media=print. */
+.wb-print-mode .topbar, .wb-print-mode .canvas-tools{ display:none !important; }
+.wb-print-mode{ background:#fff; }
+.wb-print-mode .stage{ padding:0 !important; gap:0 !important; }
+.wb-print-mode .page{ box-shadow:none !important; zoom:1 !important; }
+.wb-print-mode input.wl, .wb-print-mode input.wlbl-in, .wb-print-mode input.td-in{ background:transparent !important; }
 input.wl:disabled, input.wlbl-in:disabled, input.td-in:disabled, textarea.wlta:disabled,
 label.ck input:disabled + .ck-box{ opacity:.85; cursor:default; }
 @keyframes wbFlash{
@@ -736,8 +750,23 @@ PLATFORM_JS = CANVAS_CORE_JS + """
   var readonly = WB.mode !== 'edit';
   if(!studentId) return;
 
+  if(WB.print) document.body.classList.add('wb-print-mode');
+
+  // Read-only GET requests (entries/drawings/stream) carry the print token
+  // along when we have one — see app/workbook/print/route.ts and
+  // authorizeStudentRead in lib/auth/authorize.ts. Only set when this page
+  // was itself opened with a token (PDF export via headless Chromium, no
+  // session cookie); a live session (student/mentor/admin) doesn't need it,
+  // those requests already carry the session cookie.
+  function withToken(url){
+    if(!WB.token) return url;
+    return url + (url.indexOf('?') >= 0 ? '&' : '?') + 'token=' + encodeURIComponent(WB.token);
+  }
+
   var savedTag = document.querySelector('.saved');
   var netTag = document.querySelector('.netstatus');
+  var archivedTag = document.querySelector('.archived');
+  if(WB.archived && archivedTag) archivedTag.classList.add('on');
   function flashSaved(){
     if(!savedTag) return;
     savedTag.classList.add('on');
@@ -826,14 +855,26 @@ PLATFORM_JS = CANVAS_CORE_JS + """
     }, 'image/png');
   }
 
+  // Readiness signal for the PDF export script (Playwright waits on
+  // window.__WB_READY__ === true before printing — see
+  // lib/workbook/export-pdf.ts) — true once the entries fetch has resolved
+  // (or failed) AND every canvas has loaded its drawing (or failed to).
+  var totalCanvases = document.querySelectorAll('canvas[data-f]').length;
+  var loadedCanvases = 0;
+  var entriesReady = false;
+  function maybeReady(){
+    if(entriesReady && loadedCanvases >= totalCanvases) window.__WB_READY__ = true;
+  }
+
   var canvasHandles = {};
   document.querySelectorAll('canvas[data-f]').forEach(function(cv){
     var k = cv.getAttribute('data-f');
     var url = API + '/' + studentId + '/drawings/' + encodeURIComponent(k);
     canvasHandles[k] = wbSetupCanvas(cv, {
       readonly: readonly,
-      loadSrc: function(cb){ cb(url + '?t=' + Date.now()); },
-      onSave: function(canvasEl){ scheduleCanvasSave(k, canvasEl); }
+      loadSrc: function(cb){ cb(withToken(url + '?t=' + Date.now())); },
+      onSave: function(canvasEl){ scheduleCanvasSave(k, canvasEl); },
+      onLoaded: function(){ loadedCanvases++; maybeReady(); }
     });
   });
 
@@ -854,13 +895,13 @@ PLATFORM_JS = CANVAS_CORE_JS + """
   function reloadDrawing(fieldId, stamp, flash){
     var handle = canvasHandles[fieldId];
     if(!handle) return;
-    handle.setBaseSrc(API + '/' + studentId + '/drawings/' + encodeURIComponent(fieldId) + '?t=' + encodeURIComponent(stamp || Date.now()));
+    handle.setBaseSrc(withToken(API + '/' + studentId + '/drawings/' + encodeURIComponent(fieldId) + '?t=' + encodeURIComponent(stamp || Date.now())));
     var cv = document.querySelector('canvas[data-f="' + fieldId + '"]');
     if(flash && cv) highlight(cv.parentElement);
   }
 
   function loadEntries(flash){
-    return fetch(API + '/' + studentId + '/entries', {credentials:'same-origin', cache:'no-store'})
+    return fetch(withToken(API + '/' + studentId + '/entries'), {credentials:'same-origin', cache:'no-store'})
       .then(function(r){ return r.ok ? r.json() : null; })
       .then(function(data){
         if(!data) return;
@@ -883,7 +924,7 @@ PLATFORM_JS = CANVAS_CORE_JS + """
       .catch(function(){ setNet(false); });
   }
 
-  loadEntries(false);
+  loadEntries(false).then(function(){ entriesReady = true; maybeReady(); });
 
   if(readonly){
     // Live updates come over SSE. Some proxies (e.g. a Cloudflare quick tunnel
@@ -898,29 +939,60 @@ PLATFORM_JS = CANVAS_CORE_JS + """
     }, 3000);
   }
 
-  if(readonly && window.EventSource){
-    var es = new EventSource(API + '/' + studentId + '/stream');
-    es.addEventListener('hello', function(){ markLive(); loadEntries(true); });
-    es.addEventListener('ping', markLive);
-    es.addEventListener('entry', function(e){
-      markLive();
-      try {
-        var msg = JSON.parse(e.data);
-        var el = document.querySelector('[data-f="' + msg.fieldId + '"]');
-        if(!el) return;
-        applyValue(el, msg.value, true);
-      } catch(err){}
-    });
-    es.addEventListener('drawing', function(e){
-      markLive();
-      try {
-        var msg = JSON.parse(e.data);
-        if(msg.updatedAt) drawingSeen[msg.fieldId] = msg.updatedAt;
-        reloadDrawing(msg.fieldId, msg.updatedAt, true);
-      } catch(err){}
-    });
-    es.onerror = function(){ setNet(false); };
-    es.addEventListener('open', function(){ setNet(true); });
+  // "Завершить поток" can happen while this tab is open — either an admin
+  // clicking the button, or the bot's automatic archive-lock job once the
+  // hackathon (last course day) is over. Either way the server broadcasts
+  // an "archive_changed" event to every student in the group (see
+  // notifyGroupArchiveChanged in lib/realtime.ts / db.notify_workbook in the
+  // bot). We listen for it even in edit mode — normally edit-mode tabs don't
+  // need an SSE connection (the student's own edits are the source of
+  // truth), but this is the one server-initiated change that can happen to
+  // an edit-mode tab, and locking a student out live (rather than only on
+  // next navigation) is the whole point of "the stream can no longer be
+  // changed once it ends".
+  function handleArchiveChanged(e){
+    var msg = {};
+    try { msg = JSON.parse(e.data); } catch(err){}
+    if(msg.archived){
+      if(archivedTag) archivedTag.classList.add('on');
+      document.body.classList.add('wb-locked');
+      document.querySelectorAll('[data-f]').forEach(function(el){
+        if(el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') el.disabled = true;
+      });
+    }
+    // A full reload re-fetches __WB__ from /workbook/frame, which recomputes
+    // mode/archived from the DB — simplest way to land in a fully consistent
+    // state (readonly wiring, disabled canvases, notice) after either a lock
+    // or an unlock, rather than hand-rolling every transition client-side.
+    setTimeout(function(){ window.location.reload(); }, msg.archived ? 1200 : 300);
+  }
+
+  if(window.EventSource){
+    var es = new EventSource(withToken(API + '/' + studentId + '/stream'));
+    es.addEventListener('archive_changed', handleArchiveChanged);
+    if(readonly){
+      es.addEventListener('hello', function(){ markLive(); loadEntries(true); });
+      es.addEventListener('ping', markLive);
+      es.addEventListener('entry', function(e){
+        markLive();
+        try {
+          var msg = JSON.parse(e.data);
+          var el = document.querySelector('[data-f="' + msg.fieldId + '"]');
+          if(!el) return;
+          applyValue(el, msg.value, true);
+        } catch(err){}
+      });
+      es.addEventListener('drawing', function(e){
+        markLive();
+        try {
+          var msg = JSON.parse(e.data);
+          if(msg.updatedAt) drawingSeen[msg.fieldId] = msg.updatedAt;
+          reloadDrawing(msg.fieldId, msg.updatedAt, true);
+        } catch(err){}
+      });
+      es.onerror = function(){ setNet(false); };
+      es.addEventListener('open', function(){ setNet(true); });
+    }
   }
 
   var MM = 210 * 96 / 25.4;
@@ -1016,6 +1088,7 @@ if __name__ == '__main__':
         f'<span class="counter">1 / {n}</span>'
         '<span class="saved">сохранено</span>'
         '<span class="netstatus">нет связи, повторяем…</span>'
+        '<span class="archived">Поток завершён · только чтение</span>'
         '</div>'
     )
     html_platform = (

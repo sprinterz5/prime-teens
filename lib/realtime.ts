@@ -10,11 +10,15 @@ import { prisma } from "@/lib/prisma";
 // reuse the same LISTEN connection instead of leaking a new one per reload.
 
 export type WorkbookNotification = {
-  kind: "entry" | "drawing";
+  kind: "entry" | "drawing" | "archive_changed";
   studentId: number;
   groupId: number;
-  fieldId: string;
+  // "archive_changed" broadcasts don't apply to one field, so fieldId is
+  // optional for that kind (present for "entry"/"drawing").
+  fieldId?: string;
   value?: unknown;
+  // "archive_changed" only: true if the group just got locked, false if unlocked.
+  archived?: boolean;
   updatedAt: string;
 };
 
@@ -102,4 +106,23 @@ export async function subscribeGroup(groupId: number, fn: Subscriber): Promise<(
 /** Publish a change. Uses the app's normal Prisma pool — no dedicated connection needed for NOTIFY. */
 export async function notifyWorkbook(payload: WorkbookNotification): Promise<void> {
   await prisma.$executeRaw`SELECT pg_notify('workbook', ${JSON.stringify(payload)})`;
+}
+
+/**
+ * Broadcasts an archive lock/unlock to every student in a group: each
+ * student's own /stream (open in "edit" mode while they were still writing)
+ * is only subscribed by studentId, so a single groupId-keyed notification
+ * wouldn't reach it — we notify once per student instead. The mentor
+ * dashboard's per-group stream picks up every one of these too (it's
+ * subscribed by groupId), which is fine — it just refetches once per event.
+ */
+export async function notifyGroupArchiveChanged(
+  groupId: number,
+  studentIds: number[],
+  archived: boolean,
+  updatedAt: string
+): Promise<void> {
+  for (const studentId of studentIds) {
+    await notifyWorkbook({ kind: "archive_changed", studentId, groupId, archived, updatedAt });
+  }
 }

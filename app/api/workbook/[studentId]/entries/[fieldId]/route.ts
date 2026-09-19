@@ -4,6 +4,7 @@ import { getSession } from "@/lib/auth/session";
 import { canWriteStudent, forbidden, unauthorized } from "@/lib/auth/authorize";
 import { getField } from "@/lib/workbook/manifest";
 import { notifyWorkbook } from "@/lib/realtime";
+import { archivedResponse, getStudentGroupInfo } from "@/lib/workbook/archive";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -57,10 +58,11 @@ export async function PUT(
     }
   }
 
-  const student = await prisma.student.findUnique({ where: { id: studentId }, select: { groupId: true } });
-  if (!student) {
+  const info = await getStudentGroupInfo(studentId);
+  if (!info) {
     return NextResponse.json({ ok: false, message: "Студент не найден" }, { status: 404 });
   }
+  if (info.archivedAt) return archivedResponse();
 
   const row = await prisma.workbookEntry.upsert({
     where: { studentId_fieldId: { studentId, fieldId } },
@@ -71,7 +73,7 @@ export async function PUT(
   await notifyWorkbook({
     kind: "entry",
     studentId,
-    groupId: student.groupId,
+    groupId: info.groupId,
     fieldId,
     value,
     updatedAt: row.updatedAt.toISOString()

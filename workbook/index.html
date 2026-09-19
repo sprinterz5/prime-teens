@@ -1626,10 +1626,10 @@ function wbSetupCanvas(cv, opts){
   }
 
   function loadBase(src){
-    if(!src){ baseImg = null; renderAll(); return; }
+    if(!src){ baseImg = null; renderAll(); if(opts.onLoaded) opts.onLoaded(); return; }
     var img = new Image();
-    img.onload = function(){ baseImg = img; renderAll(); };
-    img.onerror = function(){ baseImg = null; renderAll(); };
+    img.onload = function(){ baseImg = img; renderAll(); if(opts.onLoaded) opts.onLoaded(); };
+    img.onerror = function(){ baseImg = null; renderAll(); if(opts.onLoaded) opts.onLoaded(); };
     img.src = src;
   }
 

@@ -210,6 +210,77 @@ async def sheet_sync(bot: Bot) -> None:
             await _send(bot, admin_id, line)
 
 
+ARCHIVE_TICK_MINUTES = 5
+# «Через сколько после конца хакатона реально запирать тетради» — сейчас 0
+# (запираем ровно в момент конца), константа отдельно от db._group_finished,
+# чтобы при необходимости завести отступ без переписывания остальной логики.
+ARCHIVE_GRACE_MINUTES = 0
+
+
+async def archive_lock() -> None:
+    """«Завершить поток» — автоматически, без участия админа.
+
+    Раз в ARCHIVE_TICK_MINUTES проходит по всем группам:
+      - обновляет groups.ends_at (конец последнего дня курса — хакатона,
+        db.LAST_DAY_INDEX) — на него смотрит дашборд ментора, показывая
+        «Тетради закроются после хакатона, …», пока группа ещё не заперта;
+      - группе, где курс уже закончился (db._group_finished — ЕДИНЫЙ
+        источник истины про расписание, схему заново не считаем) и которую
+        админ не отпирал вручную (archive_reopened=false) и которая ещё не
+        заперта (archived_at IS NULL), выставляет archived_at и уведомляет
+        каждого её ученика через pg_notify('workbook', …) — см.
+        db.notify_workbook — чтобы открытая вкладка тетради переключилась в
+        режим «только чтение» не дожидаясь перезагрузки страницы.
+
+    Сжатие рисунков в WebP и выгрузка PDF сюда намеренно не входят — это
+    отдельный, более тяжёлый процесс на стороне Next.js
+    (pnpm archive:pending, см. scripts/archive-pending.ts), бот его не
+    запускает и не ждёт."""
+    now = dt.datetime.now(settings.tz)
+    try:
+        rows = await db.q("SELECT * FROM groups")
+    except Exception:
+        log.exception("archive_lock: не смог прочитать группы")
+        return
+
+    for g in rows:
+        if not g["start_date"]:
+            continue
+        try:
+            window = await db.group_lesson_window(g["id"], db.LAST_DAY_INDEX)
+        except Exception:
+            log.exception("archive_lock: не смог посчитать окно занятия для группы %s", g["id"])
+            continue
+        if window is None:
+            continue
+        end = window[1] + dt.timedelta(minutes=ARCHIVE_GRACE_MINUTES)
+
+        if g["ends_at"] != end:
+            await db.run("UPDATE groups SET ends_at = ? WHERE id = ?", end, g["id"])
+
+        if g["archived_at"] is not None or g["archive_reopened"]:
+            continue
+        if not await db._group_finished(g):
+            continue
+        if now < end:
+            continue
+
+        await db.run("UPDATE groups SET archived_at = ? WHERE id = ?", end, g["id"])
+        log.info("archive_lock: группа %s (%s) заперта, конец хакатона %s", g["id"], g["name"], end)
+        try:
+            group_students = await db.students(g["id"])
+            for s in group_students:
+                await db.notify_workbook({
+                    "kind": "archive_changed",
+                    "studentId": s["id"],
+                    "groupId": g["id"],
+                    "archived": True,
+                    "updatedAt": end.isoformat(),
+                })
+        except Exception:
+            log.exception("archive_lock: заперли группу %s, но не смог уведомить веб (pg_notify)", g["id"])
+
+
 async def _send(bot: Bot, chat_id: int, text: str, markup=None) -> None:
     try:
         await bot.send_message(chat_id, text, reply_markup=markup)
@@ -230,6 +301,10 @@ def setup(bot: Bot) -> AsyncIOScheduler:
     scheduler.add_job(
         sheet_sync, "interval", minutes=30, args=[bot],
         id="sheet-sync", max_instances=1, coalesce=True, misfire_grace_time=1800,
+    )
+    scheduler.add_job(
+        archive_lock, "interval", minutes=ARCHIVE_TICK_MINUTES,
+        id="archive-lock", max_instances=1, coalesce=True, misfire_grace_time=300,
     )
     scheduler.start()
     return scheduler

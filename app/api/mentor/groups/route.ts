@@ -15,8 +15,17 @@ export async function GET() {
   const rows = await prisma.group.findMany({
     where: groups === "all" ? {} : { id: { in: groups } },
     orderBy: { name: "asc" },
-    select: { id: true, name: true, startDate: true, shift: true, format: true, lessonTime: true }
+    select: {
+      id: true,
+      name: true,
+      startDate: true,
+      shift: true,
+      format: true,
+      lessonTime: true,
+      archivedAt: true,
+      endsAt: true
+    }
   });
 
-  return NextResponse.json({ groups: rows });
+  return NextResponse.json({ isAdmin: session.role === "admin", groups: rows });
 }
