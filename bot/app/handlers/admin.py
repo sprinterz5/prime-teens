@@ -40,8 +40,8 @@ WEEKDAYS_RU = ["понедельник", "вторник", "среду", "чет
 
 
 def _parse_shift(raw: str) -> tuple[str | None, str | None, str]:
-    """Третий параметр /add_group: утро/morning/10:00 -> смена morning,
-    вечер/evening/18:00 -> смена evening, любое другое время — ручной
+    """Третий параметр /add_group: утро/morning/время смены -> morning,
+    вечер/evening/время смены -> evening, любое другое время — ручной
     override lesson_time (переопределяет смену). Возвращает
     (shift, lesson_time, примечание для ответа)."""
     v = raw.strip().lower()
@@ -136,7 +136,7 @@ async def admin_manual(message: Message) -> None:
         "Основной путь — /template, заполнить и прислать боту .xlsx.\n\n"
         "<code>/add_group Название | 2026-08-03 | вечер</code>\n"
         "   создать/обновить группу; дата — понедельник первой недели; смена — "
-        "<code>утро</code> (10:00) или <code>вечер</code> (18:00); можно указать "
+        f"<code>утро</code> ({COURSE['shifts']['morning']['start']}) или <code>вечер</code> ({COURSE['shifts']['evening']['start']}); можно указать "
         "и произвольное время — оно сохранится как ручной override\n\n"
         "<code>/set_start Название | 2026-08-03</code> (или без аргументов — группа кнопкой)\n\n"
         "<code>/add_students Группа A</code> (или без аргументов — группа кнопкой)\n"

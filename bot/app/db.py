@@ -196,11 +196,26 @@ def _block_name(block) -> str | None:
     return block.get("name") if isinstance(block, dict) else block
 
 
+def _slot_starts(day: dict) -> list[int] | None:
+    """Начала слотов в минутах от начала занятия, если шаг неровный
+    (будни: 19:00 / 20:00 / 20:50). Свой шаг дня (block_step_minutes, выходные)
+    важнее общего списка; None — считать равным шагом."""
+    if day.get("slot_starts_minutes"):
+        return [int(m) for m in day["slot_starts_minutes"]]
+    if day.get("block_step_minutes") or day.get("duration_minutes"):
+        return None
+    starts = COURSE.get("slot_starts_minutes")
+    return [int(m) for m in starts] if starts else None
+
+
 def _lesson_duration_minutes(day: dict) -> int:
-    """duration_minutes дня, если задан, иначе (число слотов в blocks) × шаг.
+    """duration_minutes дня, если задан; при неровных слотах — общий
+    lesson_minutes; иначе (число слотов в blocks) × шаг.
     Пустые (null) слоты и span-блоки считаются по занятым слотам."""
     if day.get("duration_minutes"):
         return int(day["duration_minutes"])
+    if _slot_starts(day) is not None and COURSE.get("lesson_minutes"):
+        return int(COURSE["lesson_minutes"])
     step = int(day.get("block_step_minutes") or COURSE["block_step_minutes"])
     slots = sum(_block_span(b) for b in (day.get("blocks") or []))
     return slots * step
@@ -249,14 +264,26 @@ def day_block_times(day: dict, start: dt.datetime) -> list[tuple[dt.datetime, dt
     они сдвигают следующий блок. Блок со span занимает несколько слотов подряд:
     так «Исследования» показываются как 10:00–11:40, а не как час плюс дырка."""
     step = int(day.get("block_step_minutes") or COURSE["block_step_minutes"])
+    starts = _slot_starts(day)
+    total = _lesson_duration_minutes(day)
+
+    slots = sum(_block_span(b) for b in (day.get("blocks") or []))
+
+    def at(i: int) -> int:
+        # Начало i-го слота; за последним слотом — конец занятия.
+        if i >= slots:
+            return total
+        if starts is None:
+            return i * step
+        return starts[i] if i < len(starts) else total
+
     out: list[tuple[dt.datetime, dt.datetime, str]] = []
     slot = 0
     for block in day.get("blocks") or []:
         span = _block_span(block)
         name = _block_name(block)
         if name:
-            t0 = start + dt.timedelta(minutes=slot * step)
-            out.append((t0, t0 + dt.timedelta(minutes=span * step), name))
+            out.append((start + dt.timedelta(minutes=at(slot)), start + dt.timedelta(minutes=at(slot + span)), name))
         slot += span
     return out
 
