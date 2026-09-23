@@ -88,7 +88,7 @@ async def tick(bot: Bot) -> None:
             for fire_at, key in attempts:
                 if not _due(now, fire_at, FRESH_CHECKLIST):
                     continue
-                if await db.session_done(gid, day, kind):
+                if await db.mentor_session_closed(p["mentor_id"], gid, day, kind):
                     break
                 if not await db.mark_sent(key):
                     continue

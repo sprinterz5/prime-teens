@@ -163,6 +163,22 @@ async def later(call: CallbackQuery) -> None:
     await call.answer()
 
 
+@router.callback_query(F.data.startswith("ck:skip:"))
+async def skip(call: CallbackQuery) -> None:
+    _, _, gid, day, kind = call.data.split(":")
+    mentor = await db.mentor_by_tg(call.from_user.id)
+    if not mentor:
+        await call.answer("Сначала /start", show_alert=True)
+        return
+    await db.skip_session(mentor["id"], int(gid), int(day), kind)
+    try:
+        await call.message.edit_reply_markup(reply_markup=None)
+    except Exception:
+        pass
+    await call.message.answer("Ок, по этой паре напоминать не буду. Если всё же вёл — /checklist.")
+    await call.answer()
+
+
 # ----------------------------------------------------------------- запуск
 
 @router.callback_query(F.data.startswith("ck:start:"))
@@ -183,8 +199,9 @@ async def start_survey(call: CallbackQuery, state: FSMContext) -> None:
     episodes = await db.episode_counts(group_id)
     spotlight = []
     if kind == "lesson":
-        spotlight = flow.pick_spotlight(students, episodes,
-                                        await db.spotlight_counts(group_id))
+        # Выбор по данным до этого дня — у второго ментора группы прожектор тот же.
+        spotlight = flow.pick_spotlight(students, await db.episode_counts(group_id, day_index),
+                                        await db.spotlight_counts(group_id, day_index))
     teams = sorted({s["team"] for s in students if s["team"]}) or ["без команды"]
 
     steps = flow.build_steps(kind, students, spotlight=spotlight,

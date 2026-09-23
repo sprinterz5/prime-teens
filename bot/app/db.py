@@ -613,6 +613,28 @@ async def finish_session(session_id: int) -> None:
     )
 
 
+async def mentor_session_closed(mentor_id: int, group_id: int, day_index: int,
+                                kind: str = "lesson") -> bool:
+    """Этот ментор уже закрыл опрос за день: заполнил сам или отметил, что пару
+    не вёл (напарник прикрыл). Напоминания идут каждому ментору, пока не закроет."""
+    row = await q1(
+        """SELECT 1 FROM sessions
+           WHERE mentor_id = ? AND group_id = ? AND day_index = ? AND kind = ?
+             AND status IN ('done', 'skipped') LIMIT 1""",
+        mentor_id, group_id, day_index, kind,
+    )
+    return row is not None
+
+
+async def skip_session(mentor_id: int, group_id: int, day_index: int, kind: str = "lesson") -> None:
+    """«Не вёл эту пару»: закрывает опрос ментора без ответов."""
+    session_id = await open_session(mentor_id, group_id, day_index, kind)
+    await run(
+        "UPDATE sessions SET status = 'skipped', finished_at = now() WHERE id = ?",
+        session_id,
+    )
+
+
 async def session_done(group_id: int, day_index: int, kind: str = "lesson") -> bool:
     row = await q1(
         """SELECT 1 FROM sessions
@@ -664,26 +686,29 @@ async def group_answers(group_id: int) -> list[asyncpg.Record]:
 EPISODE_KEYS = ("episode", "spotlight_episode", "last_episode", "hack_win")
 
 
-async def episode_counts(group_id: int) -> dict[int, int]:
+async def episode_counts(group_id: int, before_day: int | None = None) -> dict[int, int]:
+    """before_day — считать только дни раньше этого: так прожектор дня один и тот же
+    у всех менторов группы, кто бы ни заполнил опрос первым."""
     marks = ",".join("?" * len(EPISODE_KEYS))
     rows = await q(
         f"""SELECT student_id, COUNT(*) AS c FROM answers
             WHERE group_id = ? AND student_id IS NOT NULL
               AND question_key IN ({marks})
               AND text IS NOT NULL AND TRIM(text) <> ''
+              AND day_index < ?
             GROUP BY student_id""",
-        group_id, *EPISODE_KEYS,
+        group_id, *EPISODE_KEYS, 10_000 if before_day is None else before_day,
     )
     return {r["student_id"]: r["c"] for r in rows}
 
 
-async def spotlight_counts(group_id: int) -> dict[int, int]:
+async def spotlight_counts(group_id: int, before_day: int | None = None) -> dict[int, int]:
     rows = await q(
         """SELECT student_id, COUNT(*) AS c FROM answers
            WHERE group_id = ? AND question_key = 'spotlight_mode'
-             AND student_id IS NOT NULL
+             AND student_id IS NOT NULL AND day_index < ?
            GROUP BY student_id""",
-        group_id,
+        group_id, 10_000 if before_day is None else before_day,
     )
     return {r["student_id"]: r["c"] for r in rows}
 

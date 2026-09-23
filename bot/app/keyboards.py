@@ -45,12 +45,16 @@ def main_menu(is_admin: bool, is_mentor: bool = True) -> ReplyKeyboardMarkup:
 
 
 def start_checklist(group_id: int, day_index: int, kind: str = "lesson") -> InlineKeyboardMarkup:
-    return InlineKeyboardMarkup(inline_keyboard=[[
+    rows = [[
         InlineKeyboardButton(text="✅ Погнали",
                              callback_data=f"ck:start:{group_id}:{day_index}:{kind}"),
         InlineKeyboardButton(text="⏰ Позже",
                              callback_data=f"ck:later:{group_id}:{day_index}:{kind}"),
-    ]])
+    ]]
+    if kind in ("lesson", "hackathon"):
+        rows.append([InlineKeyboardButton(
+            text="🙅 Не вёл эту пару", callback_data=f"ck:skip:{group_id}:{day_index}:{kind}")])
+    return InlineKeyboardMarkup(inline_keyboard=rows)
 
 
 def scale(labels: dict[str, str] | None = None) -> InlineKeyboardMarkup:
