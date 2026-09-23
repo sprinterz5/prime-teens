@@ -167,9 +167,10 @@ def pick_group(groups: Iterable[Any], prefix: str) -> InlineKeyboardMarkup:
 def pick_day(group_id: int, days: list[dict], kind: str = "lesson") -> InlineKeyboardMarkup:
     rows, row = [], []
     for d in days:
+        day_kind = "hackathon" if d.get("hackathon") and kind == "lesson" else kind
         row.append(InlineKeyboardButton(
-            text=f"День {d['index']}",
-            callback_data=f"ck:start:{group_id}:{d['index']}:{kind}",
+            text=d.get("_label") or f"День {d['index']}",
+            callback_data=f"ck:start:{group_id}:{d['index']}:{day_kind}",
         ))
         if len(row) == 3:
             rows.append(row)

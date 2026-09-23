@@ -88,7 +88,9 @@ async def tick(bot: Bot) -> None:
             for fire_at, key in attempts:
                 if not _due(now, fire_at, FRESH_CHECKLIST):
                     continue
-                if await db.mentor_session_closed(p["mentor_id"], gid, day, kind):
+                # Напоминания всем менторам группы гаснут после первого заполненного
+                # опроса; свой «не вёл пару» гасит их только этому ментору.
+                if await db.session_done(gid, day, kind) or                         await db.mentor_session_closed(p["mentor_id"], gid, day, kind):
                     break
                 if not await db.mark_sent(key):
                     continue

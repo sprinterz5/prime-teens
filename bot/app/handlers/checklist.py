@@ -92,23 +92,48 @@ async def checklist_entry(message: Message, state: FSMContext) -> None:
     if len(groups) > 1:
         await message.answer("Какая группа?", reply_markup=kb.pick_group(groups, "ck:group"))
         return
-    await _offer(message, groups[0])
+    await _offer(message, groups[0], mentor["id"])
 
 
 @router.callback_query(F.data.startswith("ck:group:"))
 async def pick_group_cb(call: CallbackQuery) -> None:
     g = await db.group(int(call.data.split(":")[2]))
+    mentor = await db.mentor_by_tg(call.from_user.id)
+    if not mentor:
+        await call.answer("Сначала /start", show_alert=True)
+        return
     try:
         await call.message.edit_reply_markup(reply_markup=None)
     except Exception:
         pass
-    await _offer(call.message, g)
+    await _offer(call.message, g, mentor["id"])
     await call.answer()
 
 
-async def _offer(message: Message, g) -> None:
-    gid = g["id"]
+async def _open_days(g, mentor_id: int) -> list[dict] | None:
+    """Дни, которые этот ментор ещё может заполнить: занятие уже началось и
+    свой опрос за день он не закрыл (не заполнил и не отметил «не вёл»).
+    Чужие опросы не мешают — у каждого ментора свой. None — у группы нет даты старта."""
+    if not g["start_date"]:
+        return None
+    now = dt.datetime.now(settings.tz)
     today = _today_day_index(g["start_date"])
+    out = []
+    for d in COURSE["days"]:
+        idx = int(d["index"])
+        window = await db.group_lesson_window(g["id"], idx)
+        if not window or window[0] > now:
+            continue
+        kind = "hackathon" if d.get("hackathon") else "lesson"
+        if await db.mentor_session_closed(mentor_id, g["id"], idx, kind):
+            continue
+        label = f"День {idx}" + (" · сегодня" if idx == today else "")
+        out.append({**d, "_label": label})
+    return out
+
+
+async def _offer(message: Message, g, mentor_id: int) -> None:
+    gid = g["id"]
     baseline_done = await db.session_done(gid, 1, "baseline")
 
     if not baseline_done:
@@ -120,18 +145,16 @@ async def _offer(message: Message, g) -> None:
         )
         return
 
-    if today is not None:
-        meta = day_meta(today)
-        kind = "hackathon" if meta.get("hackathon") else "lesson"
-        await message.answer(
-            f"Сегодня <b>день {today} — {meta['title']}</b>, группа {g['name']}.",
-            reply_markup=kb.start_checklist(gid, today, kind),
-        )
+    days = await _open_days(g, mentor_id)
+    if days is None:
+        days = COURSE["days"]          # без даты старта не знаем, что уже прошло
+    if not days:
+        await message.answer(f"Группа {g['name']}: все прошедшие дни у тебя заполнены 👍",
+                             reply_markup=kb.pick_day(gid, []))  # остаётся кнопка финального опроса
         return
-
     await message.answer(
         f"Группа {g['name']}. За какой день заполняем?",
-        reply_markup=kb.pick_day(gid, COURSE["days"]),
+        reply_markup=kb.pick_day(gid, days),
     )
 
 
