@@ -724,18 +724,31 @@ async def tag_counts(student_id: int) -> dict[str, int]:
     return {r["value"]: r["c"] for r in rows}
 
 
-async def axis_value(student_id: int, axis_code: str, kind: str) -> Optional[int]:
-    """Оценка по оси из стартового (kind='baseline') или финального замера."""
-    row = await q1(
-        """SELECT a.value FROM answers a
-           JOIN sessions s ON s.id = a.session_id
-           WHERE a.student_id = ? AND a.question_key = ? AND s.kind = ?
-           ORDER BY a.id DESC LIMIT 1""",
-        student_id, f"axis_{axis_code}", kind,
-    )
-    if row and row["value"] is not None and str(row["value"]).lstrip("-").isdigit():
-        return int(row["value"])
-    return None
+async def axis_value(student_id: int, axis_code: str, kind: str,
+                     mentor_id: Optional[int] = None) -> Optional[int]:
+    """Оценка по оси из стартового (kind='baseline') или финального замера.
+    С mentor_id — последняя оценка этого ментора (подсказка «на старте ты
+    поставил»), без него — среднее последних оценок всех менторов (характеристика)."""
+    if mentor_id is None:
+        rows = await q(
+            """SELECT DISTINCT ON (s.mentor_id) a.value FROM answers a
+               JOIN sessions s ON s.id = a.session_id
+               WHERE a.student_id = ? AND a.question_key = ? AND s.kind = ?
+               ORDER BY s.mentor_id, a.id DESC""",
+            student_id, f"axis_{axis_code}", kind,
+        )
+    else:
+        rows = await q(
+            """SELECT a.value FROM answers a
+               JOIN sessions s ON s.id = a.session_id
+               WHERE a.student_id = ? AND a.question_key = ? AND s.kind = ?
+                 AND s.mentor_id = ?
+               ORDER BY a.id DESC LIMIT 1""",
+            student_id, f"axis_{axis_code}", kind, mentor_id,
+        )
+    vals = [int(r["value"]) for r in rows
+            if r["value"] is not None and str(r["value"]).lstrip("-").isdigit()]
+    return round(sum(vals) / len(vals)) if vals else None
 
 
 async def answers_count(session_id: int) -> int:

@@ -126,7 +126,7 @@ async def _open_days(g, mentor_id: int) -> list[dict] | None:
             continue
         kind = "hackathon" if d.get("hackathon") else "lesson"
         if await db.mentor_session_closed(mentor_id, g["id"], idx, kind) \
-                and not await _needs_baseline(g["id"], idx):
+                and not await _needs_baseline(g["id"], idx, mentor_id):
             continue
         label = f"День {idx}" + (" · сегодня" if idx == today else "")
         out.append({**d, "_label": label})
@@ -194,10 +194,10 @@ async def skip(call: CallbackQuery) -> None:
 
 # ----------------------------------------------------------------- запуск
 
-async def _needs_baseline(group_id: int, day_index: int) -> bool:
-    """Стартовый замер идёт хвостом опроса первого дня, пока его никто в группе
-    не закончил. В базе это по-прежнему отдельная сессия kind='baseline'."""
-    return day_index == 1 and not await db.session_done(group_id, 1, "baseline")
+async def _needs_baseline(group_id: int, day_index: int, mentor_id: int) -> bool:
+    """Стартовый замер идёт хвостом опроса первого дня. Свой у каждого ментора,
+    в характеристике оценки усредняются. В базе — отдельная сессия kind='baseline'."""
+    return day_index == 1 and not await db.mentor_session_closed(mentor_id, group_id, 1, "baseline")
 
 
 @router.callback_query(F.data.startswith("ck:start:"))
@@ -213,7 +213,7 @@ async def start_survey(call: CallbackQuery, state: FSMContext) -> None:
     except Exception:
         pass
     # Урок дня 1 уже сдан, а замера нет — сразу к замеру, урок не переспрашиваем.
-    if kind == "lesson" and await _needs_baseline(group_id, day_index) \
+    if kind == "lesson" and await _needs_baseline(group_id, day_index, mentor["id"]) \
             and await db.mentor_session_closed(mentor["id"], group_id, day_index, "lesson"):
         kind = "baseline"
     await _begin(call.message, state, mentor["id"], group_id, day_index, kind)
@@ -248,7 +248,7 @@ async def _begin(message: Message, state: FSMContext, mentor_id: int,
 
     if not steps:
         await db.finish_session(session_id)
-        if kind == "lesson" and await _needs_baseline(group_id, day_index):
+        if kind == "lesson" and await _needs_baseline(group_id, day_index, mentor_id):
             await _begin(message, state, mentor_id, group_id, day_index, "baseline")
             return
         await message.answer("Тут уже всё заполнено. ✅")
@@ -279,7 +279,7 @@ async def _begin(message: Message, state: FSMContext, mentor_id: int,
         tail = ("\n🔦 Прожектор сегодня на: <b>"
                 + "</b> и <b>".join(s["short_name"] or s["full_name"] for s in spotlight)
                 + "</b> — по ним пара вопросов подробнее.")
-    if kind == "lesson" and await _needs_baseline(group_id, day_index):
+    if kind == "lesson" and await _needs_baseline(group_id, day_index, mentor_id):
         tail += "\nПосле урока — стартовый замер по каждому ученику, он один раз за курс."
     await message.answer(
         f"{head}\nПро большинство ничего спрашивать не буду — только про тех, "
@@ -341,7 +341,8 @@ async def _ask(message: Message, state: FSMContext) -> None:
     elif step["type"] == "scale10":
         prev = None
         if step.get("show_previous") and step.get("axis_code"):
-            prev = await db.axis_value(step["student_id"], step["axis_code"], "baseline")
+            prev = await db.axis_value(step["student_id"], step["axis_code"], "baseline",
+                                       data.get("mentor_id"))
             if prev is not None:
                 text += f"\n\n<i>На старте ты поставил <b>{prev}</b>. Что сейчас?</i>"
         await message.answer(text, reply_markup=kb.scale10(prev))
@@ -429,7 +430,7 @@ async def _finish(message: Message, state: FSMContext) -> None:
 
     await state.clear()
     if kind == "lesson" and data.get("mentor_id") \
-            and await _needs_baseline(group_id, data["day_index"]):
+            and await _needs_baseline(group_id, data["day_index"], data["mentor_id"]):
         await message.answer(f"✅ Урок записан. Заняло {took}.")
         await _begin(message, state, data["mentor_id"], group_id, data["day_index"], "baseline")
         return
