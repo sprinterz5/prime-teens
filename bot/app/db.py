@@ -300,8 +300,9 @@ def fmt_block(t0: dt.datetime, t1: dt.datetime, name: str) -> str:
 
 async def add_student(group_id: int, full_name: str, class_school: str | None = None,
                       team: str | None = None, phone: str | None = None) -> int:
+    # В ростере «Имя Фамилия»: менторы обращаются по имени, фамилии они не знают.
     parts = full_name.split()
-    short = parts[-1] if parts else full_name
+    short = parts[0] if parts else full_name
     # Нормализуем здесь, а не полагаемся на то, что каждый вызывающий не
     # забудет это сделать сам: students.phone теперь ещё и ключ поиска для
     # детского бота (students_by_phone), несовпадающий формат — тихий отказ
@@ -314,7 +315,8 @@ async def add_student(group_id: int, full_name: str, class_school: str | None = 
            ON CONFLICT(group_id, full_name) DO UPDATE SET
              class_school = COALESCE(excluded.class_school, students.class_school),
              team         = COALESCE(excluded.team, students.team),
-             phone        = COALESCE(excluded.phone, students.phone)""",
+             phone        = COALESCE(excluded.phone, students.phone),
+             short_name   = excluded.short_name""",
         group_id, full_name, short, class_school, team, phone,
     )
     row = await q1("SELECT id FROM students WHERE group_id = ? AND full_name = ?",
