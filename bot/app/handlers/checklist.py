@@ -125,7 +125,8 @@ async def _open_days(g, mentor_id: int) -> list[dict] | None:
         if not window or window[0] > now:
             continue
         kind = "hackathon" if d.get("hackathon") else "lesson"
-        if await db.mentor_session_closed(mentor_id, g["id"], idx, kind):
+        if await db.mentor_session_closed(mentor_id, g["id"], idx, kind) \
+                and not await _needs_baseline(g["id"], idx):
             continue
         label = f"День {idx}" + (" · сегодня" if idx == today else "")
         out.append({**d, "_label": label})
@@ -134,17 +135,6 @@ async def _open_days(g, mentor_id: int) -> list[dict] | None:
 
 async def _offer(message: Message, g, mentor_id: int) -> None:
     gid = g["id"]
-    baseline_done = await db.session_done(gid, 1, "baseline")
-
-    if not baseline_done:
-        await message.answer(
-            f"Группа <b>{g['name']}</b>: стартовый замер ещё не сделан.\n\n"
-            "Это один раз за курс: интересы, что уже есть за плечами и пять осей "
-            "по 0–10. Без него не будет блока «Было → Стало» в характеристиках.",
-            reply_markup=kb.start_checklist(gid, 1, "baseline"),
-        )
-        return
-
     days = await _open_days(g, mentor_id)
     if days is None:
         days = COURSE["days"]          # без даты старта не знаем, что уже прошло
@@ -204,6 +194,12 @@ async def skip(call: CallbackQuery) -> None:
 
 # ----------------------------------------------------------------- запуск
 
+async def _needs_baseline(group_id: int, day_index: int) -> bool:
+    """Стартовый замер идёт хвостом опроса первого дня, пока его никто в группе
+    не закончил. В базе это по-прежнему отдельная сессия kind='baseline'."""
+    return day_index == 1 and not await db.session_done(group_id, 1, "baseline")
+
+
 @router.callback_query(F.data.startswith("ck:start:"))
 async def start_survey(call: CallbackQuery, state: FSMContext) -> None:
     _, _, gid, day, kind = call.data.split(":")
@@ -212,11 +208,23 @@ async def start_survey(call: CallbackQuery, state: FSMContext) -> None:
     if not mentor:
         await call.answer("Сначала /start", show_alert=True)
         return
+    try:
+        await call.message.edit_reply_markup(reply_markup=None)
+    except Exception:
+        pass
+    # Урок дня 1 уже сдан, а замера нет — сразу к замеру, урок не переспрашиваем.
+    if kind == "lesson" and await _needs_baseline(group_id, day_index) \
+            and await db.mentor_session_closed(mentor["id"], group_id, day_index, "lesson"):
+        kind = "baseline"
+    await _begin(call.message, state, mentor["id"], group_id, day_index, kind)
+    await call.answer()
 
+
+async def _begin(message: Message, state: FSMContext, mentor_id: int,
+                 group_id: int, day_index: int, kind: str) -> None:
     students = await db.students(group_id)
     if not students:
-        await call.message.answer("В группе нет учеников — админ ещё не загрузил список.")
-        await call.answer()
+        await message.answer("В группе нет учеников — админ ещё не загрузил список.")
         return
 
     episodes = await db.episode_counts(group_id)
@@ -230,7 +238,7 @@ async def start_survey(call: CallbackQuery, state: FSMContext) -> None:
     steps = flow.build_steps(kind, students, spotlight=spotlight,
                              teams=teams, episode_counts=episodes)
 
-    session_id = await db.open_session(mentor["id"], group_id, day_index, kind)
+    session_id = await db.open_session(mentor_id, group_id, day_index, kind)
     answered = {
         (r["question_key"], r["student_id"])
         for r in await db.q("SELECT question_key, student_id FROM answers "
@@ -238,23 +246,30 @@ async def start_survey(call: CallbackQuery, state: FSMContext) -> None:
     }
     steps = flow.drop_answered(steps, answered)
 
-    try:
-        await call.message.edit_reply_markup(reply_markup=None)
-    except Exception:
-        pass
-
     if not steps:
         await db.finish_session(session_id)
-        await call.message.answer("Тут уже всё заполнено. ✅")
-        await call.answer()
+        if kind == "lesson" and await _needs_baseline(group_id, day_index):
+            await _begin(message, state, mentor_id, group_id, day_index, "baseline")
+            return
+        await message.answer("Тут уже всё заполнено. ✅")
         return
 
     await state.set_state(Survey.answering)
     await state.update_data(
-        session_id=session_id, group_id=group_id, day_index=day_index, kind=kind,
+        session_id=session_id, mentor_id=mentor_id, group_id=group_id,
+        day_index=day_index, kind=kind,
         steps=steps, idx=0, selected=[], given={}, started_ts=time.time(),
         spotlight=[s["short_name"] or s["full_name"] for s in spotlight],
     )
+
+    if kind == "baseline":
+        await message.answer(
+            "📋 <b>Стартовый замер</b> — последняя часть опроса первого дня, один раз за курс: "
+            "интересы, что уже есть за плечами и пять осей по 0–10 по каждому ученику. "
+            "Без него не будет блока «Было → Стало» в характеристиках.\n\nПрервать — /stop."
+        )
+        await _ask(message, state)
+        return
 
     head = KIND_TITLES.get(kind, "Опрос")
     if kind == "lesson":
@@ -264,12 +279,13 @@ async def start_survey(call: CallbackQuery, state: FSMContext) -> None:
         tail = ("\n🔦 Прожектор сегодня на: <b>"
                 + "</b> и <b>".join(s["short_name"] or s["full_name"] for s in spotlight)
                 + "</b> — по ним пара вопросов подробнее.")
-    await call.message.answer(
+    if kind == "lesson" and await _needs_baseline(group_id, day_index):
+        tail += "\nПосле урока — стартовый замер по каждому ученику, он один раз за курс."
+    await message.answer(
         f"{head}\nПро большинство ничего спрашивать не буду — только про тех, "
         f"кого отметишь.{tail}\n\nПрервать — /stop."
     )
-    await _ask(call.message, state)
-    await call.answer()
+    await _ask(message, state)
 
 
 @router.message(Command("stop"), Survey.answering)
@@ -412,6 +428,11 @@ async def _finish(message: Message, state: FSMContext) -> None:
         parts.append("\nЗабрать материалы для характеристик — /export")
 
     await state.clear()
+    if kind == "lesson" and data.get("mentor_id") \
+            and await _needs_baseline(group_id, data["day_index"]):
+        await message.answer(f"✅ Урок записан. Заняло {took}.")
+        await _begin(message, state, data["mentor_id"], group_id, data["day_index"], "baseline")
+        return
     await message.answer("\n".join(parts))
 
 
