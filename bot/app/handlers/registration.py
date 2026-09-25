@@ -337,6 +337,13 @@ async def got_contact(message: Message, state: FSMContext) -> None:
         roster = "\n".join(f"  {i}. {s['full_name']}" for i, s in enumerate(students, 1))
         tail = f"\n\n<b>Твои ученики ({len(students)}):</b>\n{roster}" if students else \
             "\n\nСписок учеников ещё не загружен — админ добавит его командой /add_students."
+    elif entry and entry["is_admin"] and not entry["is_mentor"]:
+        await message.answer(
+            f"Готово, {full_name}. Ты — <b>администратор</b>: всё управление — "
+            "кнопка «⚙️ Админка» внизу.",
+            reply_markup=kb.main_menu(True, await is_mentor(message.from_user.id)),
+        )
+        return
     else:
         tail = "\n\nГруппа пока не назначена — напиши администратору."
 

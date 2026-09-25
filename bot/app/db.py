@@ -489,10 +489,27 @@ async def add_to_roster(phone: str, full_name: str, group_id: int | None,
            ON CONFLICT(phone) DO UPDATE SET
              full_name = excluded.full_name,
              group_id  = excluded.group_id,
-             is_admin  = excluded.is_admin,
+             is_admin  = GREATEST(roster.is_admin, excluded.is_admin),
              is_mentor = excluded.is_mentor""",
         norm_phone(phone), full_name, group_id, bool(is_admin), bool(is_mentor),
     )
+
+
+async def grant_admin(phone: str, full_name: str) -> Optional[asyncpg.Record]:
+    """Права администратора по номеру. Уже зарегистрирован — права сразу;
+    нет — запись в roster, права придут при /start. Существующую строку
+    roster (группу, роль ментора) не трогаем. Возвращает ментора, если он
+    уже зарегистрирован."""
+    await run(
+        """INSERT INTO roster (phone, full_name, group_id, is_admin, is_mentor)
+           VALUES (?, ?, NULL, ?, ?)
+           ON CONFLICT(phone) DO UPDATE SET is_admin = excluded.is_admin""",
+        norm_phone(phone), full_name, True, False,
+    )
+    m = await mentor_by_phone(phone)
+    if m:
+        await set_admin(m["tg_user_id"], True)
+    return m
 
 
 async def is_first_run() -> bool:

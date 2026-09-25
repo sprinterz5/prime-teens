@@ -1,7 +1,7 @@
 from aiogram import Router
 
 from app.config import settings
-from app.handlers import admin, characteristics, checklist, export, registration
+from app.handlers import admin, admin_panel, characteristics, checklist, export, registration
 
 # setup — мастер /setup — отключён: группы/менторы/ученики теперь приходят
 # Excel-импортом (см. admin.py: /template, _import_excel). Модуль не удалён,
@@ -21,5 +21,6 @@ def build_router() -> Router:
     root.include_router(export.router)
     if settings.experimental_characteristics:
         root.include_router(characteristics.router)
+    root.include_router(admin_panel.router)
     root.include_router(admin.router)
     return root

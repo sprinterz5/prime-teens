@@ -90,8 +90,9 @@ async def _guard(message: Message) -> bool:
     return False
 
 
-@router.message(F.text == "⚙️ Админка")
-@router.message(Command("admin"))
+# «⚙️ Админка» и /admin открывают кнопочную панель (admin_panel.py),
+# этот список команд — её кнопка «📖 Все команды».
+@router.message(Command("commands"))
 async def admin_help(message: Message) -> None:
     if not await _guard(message):
         return
