@@ -65,6 +65,12 @@ async def _show(call: CallbackQuery, text: str, markup: InlineKeyboardMarkup) ->
 @router.message(Command("admin"))
 async def open_panel(message: Message, state: FSMContext) -> None:
     if not await is_admin(message.from_user.id):
+        if not await db.mentor_by_tg(message.from_user.id):
+            # Бот его не знает (например, осталась старая клавиатура) — права
+            # по номеру включатся, только когда он им поделится.
+            await message.answer("Сначала подтверди номер — нажми кнопку ниже.",
+                                 reply_markup=kb.share_phone())
+            return
         await message.answer("Это только для администратора.")
         return
     await state.clear()
