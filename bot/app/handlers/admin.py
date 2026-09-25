@@ -594,22 +594,42 @@ async def list_groups(message: Message, command: CommandObject) -> None:
 async def stats(message: Message) -> None:
     if not await _guard(message):
         return
-    rows = await db.q(
-        """SELECT g.name, s.day_index, s.kind, s.status, COUNT(a.id) AS answers
-           FROM sessions s
-           JOIN groups g ON g.id = s.group_id
-           LEFT JOIN answers a ON a.session_id = s.id
-           GROUP BY s.id ORDER BY g.name, s.kind, s.day_index"""
-    )
-    if not rows:
-        await message.answer("Пока ни одного заполненного чек-листа.")
+    """По каждой активной группе — прошедшие дни и кто из менторов группы
+    заполнил опрос: ✅ заполнил, 🙅 не вёл, ⏳ начал и бросил, ▫️ не открывал."""
+    groups = await db.groups()
+    if not groups:
+        await message.answer("Активных групп нет.")
         return
-    lines = [
-        f"{r['name']} · {'финал' if r['kind'] == 'final' else 'день ' + str(r['day_index'])} · "
-        f"{'✅' if r['status'] == 'done' else '⏳'} {r['answers']} ответов"
-        for r in rows
-    ]
-    await message.answer("\n".join(lines))
+    now = dt.datetime.now(settings.tz)
+    icon = {"done": "✅", "skipped": "🙅"}
+    out = []
+    for g in groups:
+        mentors = await db.group_mentors(g["id"])
+        rows = await db.q(
+            "SELECT mentor_id, day_index, kind, status FROM sessions WHERE group_id = ?", g["id"])
+        # у ментора может быть несколько сессий на день — берём лучший статус
+        best: dict[tuple, str] = {}
+        rank = {"done": 2, "skipped": 1}
+        for r in rows:
+            key = (r["mentor_id"], r["day_index"], r["kind"])
+            if rank.get(r["status"], 0) >= rank.get(best.get(key, ""), -1):
+                best[key] = r["status"]
+        lines = [f"<b>{g['name']}</b>"]
+        for d in COURSE["days"]:
+            window = await db.group_lesson_window(g["id"], d["index"])
+            if not window or window[0] > now:
+                continue
+            kind = _day_kind(d)
+            marks = [f"{icon.get(best.get((m['id'], d['index'], kind)), '⏳' if (m['id'], d['index'], kind) in best else '▫️')} "
+                     f"{(m['full_name'] or 'ментор').split()[0]}" for m in mentors]
+            lines.append(f"  день {d['index']}: " + (", ".join(marks) or "менторов нет"))
+        if len(lines) == 1:
+            lines.append("  занятий ещё не было")
+        out.append("\n".join(lines) + "\n")
+    header = ("<b>Заполненность опросов</b>\n"
+              "✅ заполнил · 🙅 не вёл · ⏳ начал, не закончил · ▫️ не открывал\n\n")
+    for i, chunk in enumerate(_chunk_lines(out)):
+        await message.answer((header if i == 0 else "") + chunk)
 
 
 def _day_kind(day: dict) -> str:
