@@ -316,7 +316,8 @@ async def add_student(group_id: int, full_name: str, class_school: str | None = 
              class_school = COALESCE(excluded.class_school, students.class_school),
              team         = COALESCE(excluded.team, students.team),
              phone        = COALESCE(excluded.phone, students.phone),
-             short_name   = excluded.short_name""",
+             short_name   = excluded.short_name,
+             active       = true""",
         group_id, full_name, short, class_school, team, phone,
     )
     row = await q1("SELECT id FROM students WHERE group_id = ? AND full_name = ?",

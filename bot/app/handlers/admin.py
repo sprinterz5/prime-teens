@@ -923,6 +923,7 @@ async def _import_core(
     group_ctx: str = "лист Группы",
     mentor_ctx: str = "лист Менторы",
     student_ctx: str = "лист Ученики",
+    prune_missing: bool = False,
     group_missing_suffix: str = "нет на листе «Группы»",
     extra_known_groups: dict[str, int] | None = None,
 ) -> dict:
@@ -1041,6 +1042,7 @@ async def _import_core(
             await db.link_mentor_group(m["id"], gid)
 
     # --------------------------------------------------------------- Ученики
+    kept: dict[int, set[int]] = {}
     for rec in students_rows:
         row = rec["_row"]
         if _fields_blank(rec, ("group", "full_name", "class_school", "team")):
@@ -1059,14 +1061,28 @@ async def _import_core(
         team = _text(rec.get("team"))
         phone_raw = _text(rec.get("phone"))
         phone = db.norm_phone(phone_raw) if phone_raw else None
-        await db.add_student(gid, name, class_school, team, phone or None)
+        kept.setdefault(gid, set()).add(
+            await db.add_student(gid, name, class_school, team, phone or None))
         students_count += 1
+
+    # Таблица — источник правды по составу группы: кого в блоке группы больше
+    # нет (переименовали, ушёл), тот выключается, а не висит дублем. Данные
+    # не удаляются — вернётся в таблицу, add_student включит обратно. Группы
+    # без единой строки ученика не трогаем (недозаполненный блок ≠ пустая группа).
+    deactivated: list[str] = []
+    if prune_missing:
+        for gid, ids in kept.items():
+            for st in await db.students(gid):
+                if st["id"] not in ids:
+                    await db.run("UPDATE students SET active = false WHERE id = ?", st["id"])
+                    deactivated.append(st["full_name"])
 
     return {
         "groups_created": groups_created,
         "groups_updated": groups_updated,
         "mentors_count": mentors_count,
         "students_count": students_count,
+        "deactivated": deactivated,
         "skipped_empty": skipped_empty,
         "errors": errors,
     }
@@ -1108,6 +1124,7 @@ async def _import_rows(rows: list[list]) -> dict:
         group_ctx="таблица", mentor_ctx="таблица", student_ctx="таблица",
         group_missing_suffix="не нашлась среди блоков групп в этой же таблице "
                              "(ниже строки «Настоящие группы отсюда:»)",
+        prune_missing=True,
     )
     report["errors"] = problems + report["errors"]
     return report
@@ -1166,6 +1183,9 @@ def _format_import_report(report: dict, title: str = "Импорт из Excel з
         f"Менторы (в ростере): {report['mentors_count']}.",
         f"Ученики: {report['students_count']}.",
     ]
+    if report.get("deactivated"):
+        lines.append(f"Убраны из групп (их больше нет в таблице): "
+                     f"{', '.join(report['deactivated'])}.")
     if report["skipped_empty"]:
         lines.append(f"Пропущено пустых/неполных строк: {report['skipped_empty']}.")
     # Справка (разрешённые даты старта) — это подтверждение, а не ошибка.
