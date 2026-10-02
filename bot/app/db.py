@@ -325,11 +325,42 @@ async def add_student(group_id: int, full_name: str, class_school: str | None = 
     return row["id"]
 
 
-async def students(group_id: int, active_only: bool = True) -> list[asyncpg.Record]:
+async def students(group_id: int, active_only: bool = True) -> list[dict]:
     sql = "SELECT * FROM students WHERE group_id = ?"
     if active_only:
         sql += " AND active"
-    return await q(sql + " ORDER BY full_name", group_id)
+    return _disambiguate(await q(sql + " ORDER BY full_name", group_id))
+
+
+def _disambiguate(rows: list[asyncpg.Record]) -> list[dict]:
+    """Тёзкам в группе дописывает к short_name первую букву фамилии
+    («Амина К.», «Амина С.»), чтобы в чек-листе было понятно, о ком речь.
+    Если и буквы совпадают — фамилию целиком. В БД ничего не меняется."""
+    out = [dict(r) for r in rows]
+
+    def name(s: dict) -> str:
+        return s["short_name"] or s["full_name"]
+
+    def surname(s: dict) -> str:
+        parts = s["full_name"].split()
+        return " ".join(parts[1:]) if len(parts) > 1 else ""
+
+    by_name: dict[str, list[dict]] = {}
+    for s in out:
+        by_name.setdefault(name(s).lower(), []).append(s)
+
+    for same in by_name.values():
+        if len(same) < 2:
+            continue
+        initials = [surname(s)[:1].upper() for s in same]
+        unique = len(set(initials)) == len(initials) and all(initials)
+        for s, ini in zip(same, initials):
+            base = name(s)
+            if unique:
+                s["short_name"] = f"{base} {ini}."
+            elif surname(s):
+                s["short_name"] = f"{base} {surname(s)}"
+    return out
 
 
 async def student(student_id: int) -> Optional[asyncpg.Record]:
