@@ -112,6 +112,7 @@ lesson:
   - key: spotlight_mode
     type: choice
     scope: spotlight          # задаётся по каждому ученику под прожектором
+    exclude: [absent, standout]   # не было — не спрашиваем; отличился — эпизод уже есть
     text: "🔦 {student} — как сегодня работал?"
     hint: "Прожектор: подробно только про двоих за урок, по кругу."
     options:
@@ -124,6 +125,7 @@ lesson:
   - key: spotlight_episode
     type: text
     scope: spotlight
+    exclude: [absent, standout]
     voice: true
     skippable: true
     skip_label: "Нечего добавить"

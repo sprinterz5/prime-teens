@@ -159,7 +159,19 @@ def expand_for(step: dict, students: list[Any]) -> list[dict]:
     return out
 
 
+def excluded_ids(step: dict, given: dict[str, Any]) -> set[int]:
+    """Ученики, отмеченные в вопросах из step["exclude"] (один ключ или список)."""
+    keys = step.get("exclude") or []
+    if isinstance(keys, str):
+        keys = [keys]
+    return {int(i) for k in keys for i in (given.get(k) or [])}
+
+
 def should_ask(step: dict, given: dict[str, Any]) -> bool:
+    # вопрос про конкретного ученика, который выпал по exclude (например,
+    # его не было, а прожектор выбрал его ещё до вопроса «кого не было»)
+    if step.get("student_id") is not None and step["student_id"] in excluded_ids(step, given):
+        return False
     cond = step.get("ask_if")
     if not cond:
         return True

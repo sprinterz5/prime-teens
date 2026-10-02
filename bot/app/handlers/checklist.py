@@ -23,7 +23,7 @@ from aiogram.fsm.state import State, StatesGroup
 from aiogram.types import CallbackQuery, Message
 
 from app import db, flow, keyboards as kb, stt
-from app.config import COURSE, day_meta, settings
+from app.config import COURSE, QUESTIONS, day_meta, settings
 
 log = logging.getLogger(__name__)
 router = Router(name="checklist")
@@ -239,12 +239,16 @@ async def _begin(message: Message, state: FSMContext, mentor_id: int,
                              teams=teams, episode_counts=episodes)
 
     session_id = await db.open_session(mentor_id, group_id, day_index, kind)
-    answered = {
-        (r["question_key"], r["student_id"])
-        for r in await db.q("SELECT question_key, student_id FROM answers "
-                            "WHERE session_id = ?", session_id)
-    }
+    rows = await db.q("SELECT question_key, student_id, value FROM answers "
+                      "WHERE session_id = ?", session_id)
+    answered = {(r["question_key"], r["student_id"]) for r in rows}
     steps = flow.drop_answered(steps, answered)
+    # После /stop опрос продолжается с места остановки — восстанавливаем, кого
+    # уже отметили в мультивыборе («кого не было», «кто отличился»), иначе
+    # exclude не сработает и бот спросит про отсутствующего.
+    multi = {q["key"] for q in QUESTIONS.get(kind) or [] if q.get("type") == "students_multi"}
+    given = {r["question_key"]: [int(x) for x in (r["value"] or "").split(",") if x.strip().isdigit()]
+             for r in rows if r["question_key"] in multi and r["student_id"] is None}
 
     if not steps:
         await db.finish_session(session_id)
@@ -258,7 +262,7 @@ async def _begin(message: Message, state: FSMContext, mentor_id: int,
     await state.update_data(
         session_id=session_id, mentor_id=mentor_id, group_id=group_id,
         day_index=day_index, kind=kind,
-        steps=steps, idx=0, selected=[], given={}, started_ts=time.time(),
+        steps=steps, idx=0, selected=[], given=given, started_ts=time.time(),
         spotlight=[s["short_name"] or s["full_name"] for s in spotlight],
     )
 
@@ -312,7 +316,7 @@ async def stop_cb(call: CallbackQuery, state: FSMContext) -> None:
 async def _visible_students(step: dict, data: dict) -> list:
     """Список для мультивыбора. Кого уже отметили отсутствующим — не показываем."""
     students = await db.students(data["group_id"])
-    excluded = set(data.get("given", {}).get(step["exclude"]) or []) if step["exclude"] else set()
+    excluded = flow.excluded_ids(step, data.get("given", {}))
     return [s for s in students if s["id"] not in excluded]
 
 
