@@ -25,7 +25,7 @@ from app.config import COURSE, settings
 _pool: Optional[asyncpg.Pool] = None
 SCHEMA = Path(__file__).with_name("schema.sql")  # историческая справка, см. файл
 
-# Последний день курса — по нему считаем, завершена ли группа (см. _group_finished).
+# Последний день курса (хакатон) — от него считаем закрытие группы (см. group_closes_at).
 LAST_DAY_INDEX = max(int(d["index"]) for d in COURSE["days"])
 
 
@@ -244,17 +244,35 @@ async def group_lesson_datetime(group_id: int, day_index: int) -> Optional[dt.da
     return window[0] if window else None
 
 
+async def group_closes_at(group_id: int) -> Optional[dt.datetime]:
+    """Когда группа закрывается для менторов: ближайший `group_close.weekday`
+    (по умолчанию понедельник) строго после дня хакатона (LAST_DAY_INDEX), в
+    `group_close.time`. Хакатон в воскресенье → закрытие в понедельник 23:59:
+    после защиты остаётся день, чтобы дозаполнить опросы и финальный замер."""
+    window = await group_lesson_window(group_id, LAST_DAY_INDEX)
+    if window is None:
+        return None
+    end = window[1]
+    rule = COURSE.get("group_close") or {}
+    weekday = int(rule.get("weekday", 0))
+    hh, mm = (int(x) for x in str(rule.get("time", "23:59")).split(":"))
+    days = (weekday - end.weekday()) % 7 or 7
+    day = end.date() + dt.timedelta(days=days)
+    return end.replace(year=day.year, month=day.month, day=day.day,
+                       hour=hh, minute=mm, second=0, microsecond=0)
+
+
 async def _group_finished(g: asyncpg.Record) -> bool:
-    """Группа считается завершённой, когда конец последнего дня курса
-    (LAST_DAY_INDEX, сейчас день 9 — хакатон) уже в прошлом. Группа без
-    start_date ещё не начата — не завершена. Никакого отдельного флага в
-    БД: чистое вычисление по датам, см. groups()/mentor_groups()."""
+    """Группа считается завершённой, когда прошло её время закрытия
+    (group_closes_at — понедельник после хакатона). Группа без start_date
+    ещё не начата — не завершена. Никакого отдельного флага в БД: чистое
+    вычисление по датам, см. groups()/mentor_groups()."""
     if not g["start_date"]:
         return False
-    window = await group_lesson_window(g["id"], LAST_DAY_INDEX)
-    if window is None:
+    closes = await group_closes_at(g["id"])
+    if closes is None:
         return False
-    return window[1] < dt.datetime.now(settings.tz)
+    return closes < dt.datetime.now(settings.tz)
 
 
 def day_block_times(day: dict, start: dt.datetime) -> list[tuple[dt.datetime, dt.datetime, str]]:

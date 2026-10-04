@@ -557,8 +557,7 @@ async def add_students_pick_text(message: Message, state: FSMContext) -> None:
 async def _group_end(g) -> dt.datetime | None:
     if not g["start_date"]:
         return None
-    window = await db.group_lesson_window(g["id"], db.LAST_DAY_INDEX)
-    return window[1] if window else None
+    return await db.group_closes_at(g["id"])
 
 
 @router.message(Command("groups"))

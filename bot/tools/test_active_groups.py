@@ -1,7 +1,7 @@
 """Проверка «скрытия» завершённых групп без Telegram: python -m tools.test_active_groups
 
-Группа считается завершённой, когда конец последнего дня курса
-(db.LAST_DAY_INDEX, сейчас день 9 — хакатон) уже в прошлом (db._group_finished).
+Группа считается завершённой, когда прошло её время закрытия — понедельник
+23:59 после хакатона (db.group_closes_at, правило group_close в course.yaml).
 db.groups()/db.mentor_groups() по умолчанию (active_only=True) отдают только
 незавершённые — и группы без start_date (ещё не начаты).
 
@@ -10,7 +10,8 @@ db.groups()/db.mentor_groups() по умолчанию (active_only=True) отд
   2. группа с будущим стартом (день 9 ещё не наступил) попадает;
   3. группа без start_date попадает (ещё не начата — не значит завершена);
   4. db.groups(active_only=False) видит вообще все группы, включая завершённые;
-  5. то же самое для db.mentor_groups() — ментор видит только свои активные группы.
+  5. то же самое для db.mentor_groups() — ментор видит только свои активные группы;
+  6. группа, у которой хакатон был вчера, ещё открыта (закрытие — понедельник 23:59).
 """
 from __future__ import annotations
 
@@ -61,6 +62,21 @@ async def main() -> None:
 
     ok = await db._group_finished(g_undated) is False
     print(f"  группа без start_date -> НЕ завершена (ещё не начата): {ok}")
+    all_ok &= ok
+
+    print("\n--- закрытие в понедельник после хакатона ---")
+    # хакатон — offset_days 13, так что старт 14 дней назад = хакатон вчера
+    just_gid = await db.upsert_group("Хакатон вчера", (today - dt.timedelta(days=14)).isoformat(),
+                                     shift="evening")
+    g_just = await db.group(just_gid)
+    hack_end = (await db.group_lesson_window(just_gid, db.LAST_DAY_INDEX))[1]
+    closes = await db.group_closes_at(just_gid)
+    ok = closes.weekday() == 0 and (closes.hour, closes.minute) == (23, 59) \
+        and dt.timedelta(0) < closes - hack_end <= dt.timedelta(days=7, hours=12)
+    print(f"  закрытие = ближайший понедельник 23:59 после хакатона ({closes:%a %d.%m %H:%M}): {ok}")
+    all_ok &= ok
+    ok = await db._group_finished(g_just) is False
+    print(f"  хакатон вчера -> группа ещё открыта для опросов: {ok}")
     all_ok &= ok
 
     print("\n--- db.groups() (active_only=True по умолчанию) ---")

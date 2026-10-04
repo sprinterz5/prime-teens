@@ -214,7 +214,7 @@ async def sheet_sync(bot: Bot) -> None:
 
 ARCHIVE_TICK_MINUTES = 5
 # «Через сколько после конца хакатона реально запирать тетради» — сейчас 0
-# (запираем ровно в момент конца), константа отдельно от db._group_finished,
+# (запираем ровно в момент конца), константа отдельно от db.group_closes_at,
 # чтобы при необходимости завести отступ без переписывания остальной логики.
 ARCHIVE_GRACE_MINUTES = 0
 
@@ -226,8 +226,9 @@ async def archive_lock() -> None:
       - обновляет groups.ends_at (конец последнего дня курса — хакатона,
         db.LAST_DAY_INDEX) — на него смотрит дашборд ментора, показывая
         «Тетради закроются после хакатона, …», пока группа ещё не заперта;
-      - группе, где курс уже закончился (db._group_finished — ЕДИНЫЙ
-        источник истины про расписание, схему заново не считаем) и которую
+      - группе, где хакатон уже закончился (конец окна LAST_DAY_INDEX; не
+        db._group_finished — та для менторов держит группу открытой до
+        понедельника, а тетради запираются сразу) и которую
         админ не отпирал вручную (archive_reopened=false) и которая ещё не
         заперта (archived_at IS NULL), выставляет archived_at и уведомляет
         каждого её ученика через pg_notify('workbook', …) — см.
@@ -261,8 +262,6 @@ async def archive_lock() -> None:
             await db.run("UPDATE groups SET ends_at = ? WHERE id = ?", end, g["id"])
 
         if g["archived_at"] is not None or g["archive_reopened"]:
-            continue
-        if not await db._group_finished(g):
             continue
         if now < end:
             continue
