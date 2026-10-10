@@ -19,7 +19,8 @@ function errorPage(status: number, message: string): Response {
 /**
  * Serves the static platform build of the workbook (public/workbook/app.html)
  * with a small `window.__WB__ = {...}` config script injected right after
- * <body>. Loaded in an <iframe> by /workbook and /mentor/students/[id] so the
+ * <body>. Loaded in an <iframe> by /workbook, /course/day/[day] and
+ * /mentor/students/[id] so the
  * heavy static HTML stays a build artifact, while auth stays same-origin
  * (this route reads the session cookie itself, and the embedded script's
  * fetch()/EventSource calls to /api/workbook/... inherit the same cookie).
@@ -56,7 +57,12 @@ export async function GET(request: Request) {
     return errorPage(500, "Тетрадь не собрана: нет public/workbook/app.html (запустите build_web.py).");
   }
 
-  const config = JSON.stringify({ mode, studentId, apiBase: "/api/workbook", archived });
+  // ?day=N — only that course day's pages (the platform's /course/day/N); the
+  // client drops every other page before wiring fields (see PLATFORM_JS).
+  const dayRaw = url.searchParams.get("day");
+  const day = dayRaw && /^\d+$/.test(dayRaw) ? Number(dayRaw) : undefined;
+
+  const config = JSON.stringify({ mode, studentId, apiBase: "/api/workbook", archived, day });
   const injected = html.replace("<body>", `<body><script>window.__WB__=${config};</script>`);
 
   return new Response(injected, {

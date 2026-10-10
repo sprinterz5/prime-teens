@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { applySessionCookie, newSessionPayload } from "@/lib/auth/session";
+import { applySessionCookie, newSessionPayload, staffRole } from "@/lib/auth/session";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -37,7 +37,7 @@ export async function POST(request: Request) {
     const mentorId = Number(body?.mentorId);
     const mentor = await prisma.mentor.findUnique({ where: { id: mentorId } });
     if (!mentor) return NextResponse.json({ ok: false, message: "Ментор не найден" }, { status: 404 });
-    const role = mentor.isAdmin ? "admin" : "mentor";
+    const role = staffRole(mentor);
     const res = NextResponse.json({ ok: true, role, mentorId: mentor.id });
     applySessionCookie(
       res,

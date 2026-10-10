@@ -24,6 +24,7 @@ router = Router(name="admin_panel")
 
 class Panel(StatesGroup):
     admin_phone = State()
+    director_phone = State()
     mentor_phone = State()
     broadcast_text = State()
 
@@ -93,6 +94,7 @@ async def panel_guard(call: CallbackQuery, state: FSMContext, bot: Bot) -> None:
     elif action == "people":
         await _show(call, await _people_text(), _markup([
             [("👑 Добавить админа", "ap:add_admin")],
+            [("🧭 Добавить курс-директора", "ap:add_director")],
             [("🎓 Добавить ментора", "ap:add_mentor")],
             [("🔗 Ссылка-приглашение", "ap:invite")],
             BACK,
@@ -100,6 +102,11 @@ async def panel_guard(call: CallbackQuery, state: FSMContext, bot: Bot) -> None:
     elif action == "add_admin":
         await state.set_state(Panel.admin_phone)
         await _show(call, "<b>👑 Новый админ</b>\n\nПришли номер и имя одним сообщением:\n"
+                          "<code>+77011234567 Имя Фамилия</code>", CANCEL)
+    elif action == "add_director":
+        await state.set_state(Panel.director_phone)
+        await _show(call, "<b>🧭 Новый курс-директор</b>\n\nПравит задания live-режима на "
+                          "платформе и видит все группы.\n\nПришли номер и имя одним сообщением:\n"
                           "<code>+77011234567 Имя Фамилия</code>", CANCEL)
     elif action == "add_mentor":
         if not await db.groups():
@@ -149,14 +156,16 @@ async def _report(name: str, msg: Message) -> None:
 
 
 async def _people_text() -> str:
-    rows = await db.q("SELECT full_name, is_admin, is_mentor FROM mentors ORDER BY full_name")
+    rows = await db.q("SELECT full_name, is_admin, is_mentor, is_director FROM mentors ORDER BY full_name")
     admins = [r["full_name"] for r in rows if r["is_admin"]]
+    directors = [r["full_name"] for r in rows if r["is_director"]]
     mentors = [r["full_name"] for r in rows if r["is_mentor"]]
     waiting = await db.q(
         "SELECT r.full_name FROM roster r LEFT JOIN mentors m ON m.phone = r.phone "
-        "WHERE r.is_admin AND m.id IS NULL ORDER BY r.full_name")
+        "WHERE (r.is_admin OR r.is_director) AND m.id IS NULL ORDER BY r.full_name")
     out = ["<b>🙋 Люди и доступ</b>", "",
-           f"👑 Админы ({len(admins)}): " + (", ".join(admins) or "—")]
+           f"👑 Админы ({len(admins)}): " + (", ".join(admins) or "—"),
+           f"🧭 Курс-директоры ({len(directors)}): " + (", ".join(directors) or "—")]
     if waiting:
         out.append("⏳ Ещё не зашли в бота: " + ", ".join(r["full_name"] for r in waiting))
     out.append(f"🎓 Менторов в боте: {len(mentors)}")
@@ -198,6 +207,31 @@ async def add_admin_got(message: Message, state: FSMContext, bot: Bot) -> None:
     else:
         text = (f"👑 {name} (+{phone}) записан как админ.\n"
                 "Пусть откроет бота, нажмёт /start и поделится номером — права включатся сами.")
+    await message.answer(text, reply_markup=_markup([[("🙋 К людям", "ap:people")], BACK]))
+
+
+@router.message(Panel.director_phone, F.text)
+async def add_director_got(message: Message, state: FSMContext, bot: Bot) -> None:
+    parsed = _parse_person(message.text)
+    if not parsed:
+        await message.answer("Не разобрал. Нужно так: <code>+77011234567 Имя Фамилия</code>",
+                             reply_markup=CANCEL)
+        return
+    await state.clear()
+    phone, name = parsed
+    m = await db.grant_director(phone, name)
+    if m:
+        try:
+            await bot.send_message(
+                m["tg_user_id"], "Тебе выдали роль курс-директора: задания live-режима и все "
+                                 "группы — на платформе, кнопка «💻 Платформа».",
+                reply_markup=kb.main_menu(bool(m["is_admin"]), bool(m["is_mentor"])))
+        except Exception:
+            log.warning("Не доставлено уведомление курс-директору %s", m["tg_user_id"])
+        text = f"🧭 {m['full_name']} теперь курс-директор."
+    else:
+        text = (f"🧭 {name} (+{phone}) записан как курс-директор.\n"
+                "Пусть откроет бота, нажмёт /start и поделится номером — роль включится сама.")
     await message.answer(text, reply_markup=_markup([[("🙋 К людям", "ap:people")], BACK]))
 
 

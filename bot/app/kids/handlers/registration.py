@@ -33,7 +33,8 @@ def _welcome_text(student) -> str:
     tail = " · ".join(b for b in bits if b)
     return (f"Привет, {student['full_name']}!" + (f"\n{tail}" if tail else "") +
             "\n\nЯ буду напоминать о занятиях и собирать твой отзыв после урока — "
-            "он уходит наставнику без твоего имени.")
+            "он уходит наставнику без твоего имени.\n\n"
+            "Тетрадь и домашка — на сайте: нажми «💻 Тетрадь и домашка» или /login.")
 
 
 async def _welcome(message: Message, student) -> None:

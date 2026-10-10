@@ -115,6 +115,7 @@ model Group {
   mentorGroups  MentorGroup[]
   sessions      Session[]
   invites       Invite[]
+  liveSessions  LiveSession[]
 
   @@map("groups")
 }
@@ -139,6 +140,9 @@ model Student {
   invites            Invite[]
   workbookEntries    WorkbookEntry[]
   workbookDrawings   WorkbookDrawing[]
+  homework           Homework[]
+  loginCodes         LoginCode[]
+  liveAnswers        LiveAnswer[]
 
   @@unique([groupId, fullName])
   @@map("students")
@@ -197,6 +201,9 @@ model Roster {
   groupId  Int?    @map("group_id")
   isAdmin  Boolean @default(false) @map("is_admin")
   isMentor Boolean @default(true) @map("is_mentor")
+  // Курс-директор: правит задания live-режима и видит все группы. Между
+  // ментором и админом; выдаётся так же, как админ (bot/app/db.py:grant_director).
+  isDirector Boolean @default(false) @map("is_director")
 
   group Group? @relation(fields: [groupId], references: [id], onDelete: SetNull)
 
@@ -210,10 +217,16 @@ model Mentor {
   fullName  String?  @map("full_name")
   isAdmin   Boolean  @default(false) @map("is_admin")
   isMentor  Boolean  @default(true) @map("is_mentor")
+  // См. Roster.isDirector. Флаги независимы: курс-директор может вести и свою группу.
+  isDirector Boolean @default(false) @map("is_director")
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
 
-  mentorGroups MentorGroup[]
-  sessions     Session[]
+  mentorGroups     MentorGroup[]
+  sessions         Session[]
+  homeworkReviewed Homework[]
+  loginCodes       LoginCode[]
+  liveActivities   LiveActivity[]
+  liveSessions     LiveSession[]
 
   @@map("mentors")
 }
@@ -340,4 +353,130 @@ model WorkbookDrawing {
 
   @@id([studentId, fieldId])
   @@map("workbook_drawings")
+}
+
+// ---------------------------------------------------------------------------
+// Вход на платформу вне Telegram. Бот (/login в детском или менторском)
+// пишет сюда одноразовую ссылку и короткий код; сайт меняет любой из них на
+// обычную сессию (lib/auth/login-code.ts). Ссылка хранится только как
+// sha256 — по содержимому таблицы войти нельзя. Новая выдача гасит старые
+// неиспользованные коды того же человека (bot/app/db.py:issue_login_code).
+// ---------------------------------------------------------------------------
+
+model LoginCode {
+  tokenHash String    @id @map("token_hash")
+  code      String
+  role      String // student | mentor (admin — это mentor с is_admin)
+  studentId Int?      @map("student_id")
+  mentorId  Int?      @map("mentor_id")
+  tgUserId  BigInt    @map("tg_user_id")
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  expiresAt DateTime  @map("expires_at") @db.Timestamptz(6)
+  usedAt    DateTime? @map("used_at") @db.Timestamptz(6)
+
+  student Student? @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  mentor  Mentor?  @relation(fields: [mentorId], references: [id], onDelete: Cascade)
+
+  @@index([code], map: "idx_login_codes_code")
+  @@map("login_codes")
+}
+
+// Домашка: одна сдача на ученика и день курса (текст задания — homework дня
+// в bot/config/course.yaml). Ученик сдаёт и правит на платформе, ментор
+// принимает или возвращает с комментарием. notified_at ставит детский бот,
+// когда сообщил ученику о проверке (bot/app/kids/scheduler.py); новая сдача
+// сбрасывает и проверку, и notified_at.
+model Homework {
+  studentId     Int       @map("student_id")
+  dayIndex      Int       @map("day_index")
+  text          String
+  status        String    @default("submitted") // submitted | accepted | returned
+  mentorComment String?   @map("mentor_comment")
+  submittedAt   DateTime  @default(now()) @map("submitted_at") @db.Timestamptz(6)
+  reviewedAt    DateTime? @map("reviewed_at") @db.Timestamptz(6)
+  reviewedBy    Int?      @map("reviewed_by")
+  notifiedAt    DateTime? @map("notified_at") @db.Timestamptz(6)
+
+  student  Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  reviewer Mentor? @relation(fields: [reviewedBy], references: [id], onDelete: SetNull)
+
+  @@id([studentId, dayIndex])
+  @@index([status], map: "idx_homework_status")
+  @@map("homework")
+}
+
+// ---------------------------------------------------------------------------
+// Live-режим (свой «Kahoot» на уроке, lib/live.ts). Шаблоны правит
+// курс-директор; при запуске вопросы копируются в live_sessions.questions,
+// так что правка шаблона не трогает уже собранные ответы. Ответы на
+// экране — только обобщённо и в моменте; по ученикам их видит только ментор.
+// ---------------------------------------------------------------------------
+
+model LiveActivity {
+  id         Int       @id @default(autoincrement())
+  title      String
+  dayIndex   Int?      @map("day_index") // к какому дню курса — подсказка при запуске
+  createdBy  Int?      @map("created_by")
+  createdAt  DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt  DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  archivedAt DateTime? @map("archived_at") @db.Timestamptz(6)
+
+  author    Mentor?        @relation(fields: [createdBy], references: [id], onDelete: SetNull)
+  questions LiveQuestion[]
+  sessions  LiveSession[]
+
+  @@map("live_activities")
+}
+
+model LiveQuestion {
+  id           Int    @id @default(autoincrement())
+  activityId   Int    @map("activity_id")
+  position     Int
+  kind         String // choice | scale | text
+  prompt       String
+  options      Json   @default("[]") // варианты для choice
+  correctIndex Int?   @map("correct_index") // choice с правильным ответом = квиз
+  timeLimitSec Int?   @map("time_limit_sec")
+
+  activity LiveActivity @relation(fields: [activityId], references: [id], onDelete: Cascade)
+
+  @@index([activityId, position], map: "idx_live_questions_activity")
+  @@map("live_questions")
+}
+
+model LiveSession {
+  id           Int       @id @default(autoincrement())
+  activityId   Int?      @map("activity_id")
+  groupId      Int       @map("group_id")
+  startedBy    Int?      @map("started_by")
+  title        String
+  questions    Json // снимок вопросов шаблона на момент запуска
+  currentIndex Int       @default(-1) @map("current_index") // -1 — лобби
+  phase        String    @default("lobby") // lobby | open | reveal | finished
+  openedAt     DateTime? @map("opened_at") @db.Timestamptz(6)
+  startedAt    DateTime  @default(now()) @map("started_at") @db.Timestamptz(6)
+  finishedAt   DateTime? @map("finished_at") @db.Timestamptz(6)
+
+  activity LiveActivity? @relation(fields: [activityId], references: [id], onDelete: SetNull)
+  group    Group         @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  starter  Mentor?       @relation(fields: [startedBy], references: [id], onDelete: SetNull)
+  answers  LiveAnswer[]
+
+  @@index([groupId, finishedAt], map: "idx_live_sessions_group")
+  @@map("live_sessions")
+}
+
+model LiveAnswer {
+  sessionId     Int      @map("session_id")
+  questionIndex Int      @map("question_index")
+  studentId     Int      @map("student_id")
+  value         Json
+  correct       Boolean?
+  answeredAt    DateTime @default(now()) @map("answered_at") @db.Timestamptz(6)
+
+  session LiveSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  student Student     @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@id([sessionId, questionIndex, studentId])
+  @@map("live_answers")
 }

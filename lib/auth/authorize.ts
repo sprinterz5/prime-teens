@@ -10,9 +10,19 @@ export function forbidden(message = "Доступ запрещён") {
   return NextResponse.json({ ok: false, message }, { status: 403 });
 }
 
-/** Group ids a mentor/admin session may see. Admin sees every group. */
+/** Admin and course director: every group, every live template. */
+export function seesAllGroups(session: SessionPayload): boolean {
+  return session.role === "admin" || session.role === "director";
+}
+
+/** Who creates and edits live-mode templates (/studio). */
+export function canEditLive(session: SessionPayload): boolean {
+  return seesAllGroups(session);
+}
+
+/** Group ids a mentor/director/admin session may see. Admin and director see every group. */
 export async function visibleGroupIds(session: SessionPayload): Promise<number[] | "all"> {
-  if (session.role === "admin") return "all";
+  if (seesAllGroups(session)) return "all";
   if (session.role === "mentor" && session.mentorId) {
     const rows = await prisma.mentorGroup.findMany({
       where: { mentorId: session.mentorId },
@@ -26,7 +36,7 @@ export async function visibleGroupIds(session: SessionPayload): Promise<number[]
 /** Whether the session may READ a given student's workbook. */
 export async function canReadStudent(session: SessionPayload, studentId: number): Promise<boolean> {
   if (session.role === "student") return session.studentId === studentId;
-  if (session.role === "admin") return true;
+  if (seesAllGroups(session)) return true;
   if (session.role === "mentor" && session.mentorId) {
     const student = await prisma.student.findUnique({ where: { id: studentId }, select: { groupId: true } });
     if (!student) return false;
@@ -58,6 +68,11 @@ export async function visibleStudentIds(session: SessionPayload, groupId?: numbe
 export async function canAccessGroup(session: SessionPayload, groupId: number): Promise<boolean> {
   const groups = await visibleGroupIds(session);
   return groups === "all" || groups.includes(groupId);
+}
+
+/** Who may start and drive a live session in a group: its mentors, directors, admins. */
+export async function canRunLive(session: SessionPayload, groupId: number): Promise<boolean> {
+  return session.role !== "student" && (await canAccessGroup(session, groupId));
 }
 
 export type ReadAuthResult = { ok: true } | { ok: false; status: 401 | 403 };

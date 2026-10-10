@@ -37,10 +37,9 @@ def main_menu(is_admin: bool, is_mentor: bool = True) -> ReplyKeyboardMarkup:
             rows.append([KeyboardButton(text="🧪 Характеристики (эксперимент)")])
     if is_admin:
         rows.append([KeyboardButton(text="⚙️ Админка")])
-    if not rows:
-        # ни одной роли — такого быть не должно, но без этого Telegram не
-        # примет пустую клавиатуру
-        rows.append([KeyboardButton(text="ℹ️ /help")])
+    # Платформа — любому сотруднику, в том числе курс-директору без группы:
+    # его работа (задания live-режима) целиком там.
+    rows.append([KeyboardButton(text="💻 Платформа")])
     return ReplyKeyboardMarkup(keyboard=rows, resize_keyboard=True)
 
 

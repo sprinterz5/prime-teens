@@ -13,8 +13,10 @@ group_lesson_window/_group_finished)."""
 from __future__ import annotations
 
 import datetime as dt
+import hashlib
 import json
 import re
+import secrets
 from pathlib import Path
 from typing import Any, Optional
 
@@ -562,6 +564,22 @@ async def grant_admin(phone: str, full_name: str) -> Optional[asyncpg.Record]:
     return m
 
 
+async def grant_director(phone: str, full_name: str) -> Optional[asyncpg.Record]:
+    """Роль курс-директора по номеру — так же, как grant_admin: уже
+    зарегистрирован — сразу, нет — запись в roster, роль придёт при /start.
+    Курс-директор правит задания live-режима на платформе и видит все группы."""
+    await run(
+        """INSERT INTO roster (phone, full_name, group_id, is_admin, is_mentor, is_director)
+           VALUES (?, ?, NULL, false, false, true)
+           ON CONFLICT(phone) DO UPDATE SET is_director = true""",
+        norm_phone(phone), full_name,
+    )
+    m = await mentor_by_phone(phone)
+    if m:
+        await set_director(m["tg_user_id"], True)
+    return m
+
+
 async def is_first_run() -> bool:
     """Ни одного ментора и пустой белый список — бот только что развёрнут.
     В этот момент первый, кто представится, становится администратором:
@@ -573,6 +591,12 @@ async def is_first_run() -> bool:
 
 async def set_admin(tg_user_id: int, value: bool = True) -> bool:
     n = await run("UPDATE mentors SET is_admin = ? WHERE tg_user_id = ?",
+                  bool(value), tg_user_id)
+    return n > 0
+
+
+async def set_director(tg_user_id: int, value: bool = True) -> bool:
+    n = await run("UPDATE mentors SET is_director = ? WHERE tg_user_id = ?",
                   bool(value), tg_user_id)
     return n > 0
 
@@ -592,21 +616,24 @@ async def mentor_by_tg(tg_user_id: int) -> Optional[asyncpg.Record]:
 
 
 async def register_mentor(tg_user_id: int, phone: str, full_name: str,
-                          is_admin: bool = False, is_mentor: bool = True) -> int:
-    """is_admin/is_mentor независимы и только «добавляются»: GREATEST с уже
+                          is_admin: bool = False, is_mentor: bool = True,
+                          is_director: bool = False) -> int:
+    """is_admin/is_mentor/is_director независимы и только «добавляются»: GREATEST с уже
     сохранённым значением (Postgres-эквивалент SQLite-шного многоаргументного
     MAX(); булевы false < true, так что это ИЛИ) — повторная регистрация
     (например, по ссылке администратора) никогда не отбирает роль, выданную
     раньше."""
     await run(
-        """INSERT INTO mentors (tg_user_id, phone, full_name, is_admin, is_mentor)
-           VALUES (?, ?, ?, ?, ?)
+        """INSERT INTO mentors (tg_user_id, phone, full_name, is_admin, is_mentor, is_director)
+           VALUES (?, ?, ?, ?, ?, ?)
            ON CONFLICT(tg_user_id) DO UPDATE SET
-             phone     = excluded.phone,
-             full_name = excluded.full_name,
-             is_admin  = GREATEST(mentors.is_admin, excluded.is_admin),
-             is_mentor = GREATEST(mentors.is_mentor, excluded.is_mentor)""",
+             phone       = excluded.phone,
+             full_name   = excluded.full_name,
+             is_admin    = GREATEST(mentors.is_admin, excluded.is_admin),
+             is_mentor   = GREATEST(mentors.is_mentor, excluded.is_mentor),
+             is_director = GREATEST(mentors.is_director, excluded.is_director)""",
         tg_user_id, norm_phone(phone), full_name, bool(is_admin), bool(is_mentor),
+        bool(is_director),
     )
     row = await q1("SELECT id FROM mentors WHERE tg_user_id = ?", tg_user_id)
     return row["id"]
@@ -971,3 +998,72 @@ async def notify_workbook(payload: dict) -> None:
     как их ждёт JSON.parse на стороне Next.js/клиента; держите форму в
     синхроне с WorkbookNotification в lib/realtime.ts."""
     await pool().execute("SELECT pg_notify('workbook', $1)", json.dumps(payload))
+
+
+# ----------------------------- вход на веб-платформу -----------------------------
+#
+# /login в любом из ботов: одноразовая ссылка + короткий код, которые сайт
+# меняет на сессию (lib/auth/login-code.ts). Ссылку храним только как
+# sha256 — по таблице войти нельзя. Код короткий, чтобы его можно было
+# набрать на ноутбуке, пока бот открыт на телефоне; от перебора его держат
+# короткий срок жизни и лимит попыток на сайте.
+
+LOGIN_TTL_MINUTES = 15
+
+
+async def issue_login_code(role: str, tg_user_id: int, *, student_id: int | None = None,
+                           mentor_id: int | None = None) -> tuple[str, str]:
+    """Выдаёт (токен ссылки, код). Предыдущие неиспользованные коды этого
+    человека гасит — в ходу всегда только последний выданный."""
+    token = secrets.token_urlsafe(32)
+    token_hash = hashlib.sha256(token.encode()).hexdigest()
+    async with pool().acquire() as conn, conn.transaction():
+        await conn.execute("DELETE FROM login_codes WHERE expires_at < now() - interval '1 day'")
+        await conn.execute(
+            "UPDATE login_codes SET used_at = now() "
+            "WHERE tg_user_id = $1 AND role = $2 AND used_at IS NULL",
+            tg_user_id, role,
+        )
+        # Код не обязан быть уникальным навсегда — только среди действующих.
+        for _ in range(20):
+            code = f"{secrets.randbelow(1_000_000):06d}"
+            busy = await conn.fetchval(
+                "SELECT 1 FROM login_codes WHERE code = $1 AND used_at IS NULL "
+                "AND expires_at > now()", code,
+            )
+            if not busy:
+                break
+        await conn.execute(
+            "INSERT INTO login_codes (token_hash, code, role, student_id, mentor_id, "
+            "tg_user_id, expires_at) VALUES ($1, $2, $3, $4, $5, $6, "
+            f"now() + interval '{LOGIN_TTL_MINUTES} minutes')",
+            token_hash, code, role, student_id, mentor_id, tg_user_id,
+        )
+    return token, code
+
+
+# ----------------------------- домашка (веб-платформа) -----------------------------
+
+async def homework_reviews_to_notify() -> list[asyncpg.Record]:
+    """Проверенные ментором сдачи, о которых ученику ещё не сказали."""
+    return await q(
+        "SELECT h.*, s.tg_user_id FROM homework h JOIN students s ON s.id = h.student_id "
+        "WHERE h.reviewed_at IS NOT NULL AND h.notified_at IS NULL "
+        "AND h.status IN ('accepted', 'returned') AND s.active AND s.tg_user_id IS NOT NULL"
+    )
+
+
+async def mark_homework_notified(student_id: int, day_index: int, reviewed_at: dt.datetime) -> None:
+    """reviewed_at в условии: если ментор успел перепроверить, пока сообщение
+    уходило, новая проверка останется неотмеченной и уйдёт следующим тиком."""
+    await run(
+        "UPDATE homework SET notified_at = now() "
+        "WHERE student_id = ? AND day_index = ? AND reviewed_at = ?",
+        student_id, day_index, reviewed_at,
+    )
+
+
+async def homework_submitted(student_id: int, day_index: int) -> bool:
+    return bool(await q1(
+        "SELECT 1 FROM homework WHERE student_id = ? AND day_index = ?", student_id, day_index,
+    ))

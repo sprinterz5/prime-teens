@@ -35,6 +35,7 @@ log = logging.getLogger("primeteens.kids")
 
 COMMANDS = [
     BotCommand(command="start", description="Регистрация по номеру"),
+    BotCommand(command="login", description="Войти в тетрадь на сайте"),
     BotCommand(command="schedule", description="Расписание группы"),
     BotCommand(command="feedback", description="Отзыв об уроке"),
     BotCommand(command="team", description="Команда на хакатон"),
