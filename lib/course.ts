@@ -18,11 +18,18 @@ type RawDay = {
   homework?: string | null;
   start_override?: string | null;
   hackathon?: boolean;
+  blocks?: (string | { name?: string; span?: number } | null)[];
+  duration_minutes?: number;
+  block_step_minutes?: number;
+  slot_starts_minutes?: number[];
 };
 
 type RawCourse = {
   shifts: Record<string, { label: string; start: string }>;
   days: RawDay[];
+  lesson_minutes?: number;
+  block_step_minutes: number;
+  slot_starts_minutes?: number[];
 };
 
 export type CourseDay = {
@@ -34,6 +41,7 @@ export type CourseDay = {
   homework: string | null;
   startOverride: string | null;
   hackathon: boolean;
+  durationMinutes: number;
 };
 
 const raw = parse(readFileSync(path.join(process.cwd(), "bot", "config", "course.yaml"), "utf8")) as RawCourse;
@@ -46,9 +54,24 @@ export const courseDaysList: CourseDay[] = raw.days
     tasks: d.tasks ?? [],
     homework: d.homework?.trim() || null,
     startOverride: d.start_override ?? null,
-    hackathon: !!d.hackathon
+    hackathon: !!d.hackathon,
+    durationMinutes: lessonDurationMinutes(d)
   }))
   .sort((a, b) => a.index - b.index);
+
+/** Mirrors bot/app/db.py:_lesson_duration_minutes. */
+function lessonDurationMinutes(day: RawDay): number {
+  if (day.duration_minutes) return Number(day.duration_minutes);
+  const unevenSlots =
+    !!day.slot_starts_minutes?.length || (!day.block_step_minutes && !!raw.slot_starts_minutes?.length);
+  if (unevenSlots && raw.lesson_minutes) return Number(raw.lesson_minutes);
+  const step = Number(day.block_step_minutes ?? raw.block_step_minutes);
+  const slots = (day.blocks ?? []).reduce<number>(
+    (n, b) => n + (b && typeof b === "object" ? Math.max(1, Number(b.span ?? 1)) : 1),
+    0
+  );
+  return slots * step;
+}
 
 export function getCourseDay(index: number): CourseDay | undefined {
   return courseDaysList.find((d) => d.index === index);
@@ -86,7 +109,8 @@ export function sameCourseDate(a: Date, b: Date): boolean {
   return fmt(a) === fmt(b);
 }
 
-function zonedTime(year: number, month: number, day: number, hh: number, mm: number): Date {
+/** Wall-clock time in the course time zone → instant. month is 0-based, like Date.UTC. */
+export function zonedTime(year: number, month: number, day: number, hh: number, mm: number): Date {
   const asUtc = Date.UTC(year, month, day, hh, mm);
   return new Date(asUtc - tzOffsetMs(new Date(asUtc)));
 }

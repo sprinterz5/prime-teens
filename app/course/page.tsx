@@ -77,6 +77,14 @@ export default async function CoursePage() {
           )
         )}
 
+        <Link
+          href="/course/calendar"
+          className="mt-3 flex items-center justify-between rounded-xl border border-white/10 bg-navy-900 px-4 py-3 text-sm hover:border-gold-400"
+        >
+          <span>Календарь: занятия, сроки домашки и мои дедлайны</span>
+          <span className="text-muted">→</span>
+        </Link>
+
         <ol className="mt-6 space-y-3">
           {days.map(({ day, start }) => {
             const hasWorkbook = workbookDays.includes(day.index);
