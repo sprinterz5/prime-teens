@@ -23,6 +23,7 @@
 """
 from __future__ import annotations
 
+import hashlib
 import os
 import re
 from pathlib import Path
@@ -92,25 +93,34 @@ async def _ensure_database() -> None:
 
 
 async def _ensure_schema(conn: asyncpg.Connection) -> None:
-    has_groups = await conn.fetchval(
-        "SELECT 1 FROM information_schema.tables "
-        "WHERE table_schema = 'public' AND table_name = 'groups'"
-    )
-    if has_groups:
-        return
+    """Схема = все миграции Prisma по порядку. Отпечаток их содержимого лежит
+    в _pgtest_schema: появилась новая миграция (или поправили старую) —
+    одноразовая тестовая схема пересоздаётся целиком, иначе база, созданная
+    до миграции, так и осталась бы без новых таблиц и колонок."""
     migrations = sorted(MIGRATIONS_DIR.glob("*/migration.sql"))
     if not migrations:
         raise RuntimeError(f"Не нашёл ни одной миграции в {MIGRATIONS_DIR}")
-    for migration in migrations:
-        sql = migration.read_text(encoding="utf-8")
+    sqls = [m.read_text(encoding="utf-8") for m in migrations]
+    fingerprint = hashlib.sha256("\n--\n".join(sqls).encode("utf-8")).hexdigest()
+
+    has_meta = await conn.fetchval(
+        "SELECT 1 FROM information_schema.tables "
+        "WHERE table_schema = 'public' AND table_name = '_pgtest_schema'"
+    )
+    if has_meta and await conn.fetchval("SELECT fingerprint FROM _pgtest_schema") == fingerprint:
+        return
+    await conn.execute("DROP SCHEMA public CASCADE; CREATE SCHEMA public;")
+    for sql in sqls:
         await conn.execute(sql)  # без параметров -> simple query protocol, много стейтментов ок
+    await conn.execute("CREATE TABLE _pgtest_schema (fingerprint TEXT NOT NULL)")
+    await conn.execute("INSERT INTO _pgtest_schema (fingerprint) VALUES ($1)", fingerprint)
 
 
 async def _truncate_all(conn: asyncpg.Connection) -> None:
     rows = await conn.fetch(
         "SELECT tablename FROM pg_tables WHERE schemaname = 'public'"
     )
-    tables = [r["tablename"] for r in rows if r["tablename"] != "_prisma_migrations"]
+    tables = [r["tablename"] for r in rows if r["tablename"] not in ("_prisma_migrations", "_pgtest_schema")]
     if not tables:
         return
     names = ", ".join(f'"{t}"' for t in tables)
