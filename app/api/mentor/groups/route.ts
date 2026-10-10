@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth/session";
-import { forbidden, unauthorized, visibleGroupIds } from "@/lib/auth/authorize";
+import { canEditLive, forbidden, unauthorized, visibleGroupIds } from "@/lib/auth/authorize";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -27,5 +27,5 @@ export async function GET() {
     }
   });
 
-  return NextResponse.json({ isAdmin: session.role === "admin", groups: rows });
+  return NextResponse.json({ isAdmin: session.role === "admin", canEditLive: canEditLive(session), groups: rows });
 }

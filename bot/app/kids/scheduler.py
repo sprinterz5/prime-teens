@@ -6,12 +6,13 @@ kid: — чтобы дедупликация двух ботов не перес
 from __future__ import annotations
 
 import datetime as dt
+import html
 import logging
 
 from aiogram import Bot
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
-from app import db
+from app import db, platform
 from app.config import COURSE, settings
 
 log = logging.getLogger(__name__)
@@ -33,6 +34,7 @@ async def _linked_students(group_id: int) -> list:
 
 
 async def tick(bot: Bot) -> None:
+    await notify_homework_reviews(bot)
     now = dt.datetime.now(settings.tz)
     try:
         groups = await db.groups()  # только активные (см. db.groups active_only=True)
@@ -70,15 +72,27 @@ async def tick(bot: Bot) -> None:
                     await _send(
                         bot, s["tg_user_id"],
                         f"⏰ Через {minutes} мин занятие «{d['title']}»\n"
-                        f"{start.strftime('%H:%M')}–{end.strftime('%H:%M')}\n{block_lines}",
+                        f"{start.strftime('%H:%M')}–{end.strftime('%H:%M')}\n{block_lines}"
+                        + platform.link_line("Задания дня", f"/course/day/{day}"),
                     )
 
-            # --- после занятия: попросить отзыв (одна попытка, без давления) ---
+            # --- после занятия: домашка и отзыв (по одной попытке, без давления) ---
             if d.get("hackathon"):
                 continue  # про хакатон отдельного отзыва не просим
             fire = end + dt.timedelta(minutes=int(rem["checklist_after_min"]))
             if not _due(now, fire, FRESH_FEEDBACK):
                 continue
+            if (d.get("homework") or "").strip() and settings.platform_url:
+                for s in students:
+                    if await db.homework_submitted(s["id"], day):
+                        continue
+                    if not await db.mark_sent(f"kidhw:{s['id']}:{day}"):
+                        continue
+                    await _send(
+                        bot, s["tg_user_id"],
+                        f"📚 Домашка к следующему занятию: {d['homework']}"
+                        + platform.link_line("Сдать на платформе", f"/course/day/{day}"),
+                    )
             for s in students:
                 if await db.kid_feedback_done(s["id"], day):
                     continue
@@ -90,6 +104,29 @@ async def tick(bot: Bot) -> None:
                     f"Как прошёл урок «{d['title']}»? Пара слов наставнику "
                     "(без твоего имени) — /feedback",
                 )
+
+
+async def notify_homework_reviews(bot: Bot) -> None:
+    """Ментор проверил домашку на платформе — сообщаем ученику. Сама
+    отметка notified_at в таблице homework и служит дедупликацией."""
+    try:
+        rows = await db.homework_reviews_to_notify()
+    except Exception:
+        log.exception("Тик: не смог прочитать проверенную домашку")
+        return
+    titles = {int(d["index"]): d["title"] for d in COURSE["days"]}
+    for h in rows:
+        day = int(h["day_index"])
+        title = titles.get(day, f"день {day}")
+        if h["status"] == "accepted":
+            text = f"✅ Наставник принял домашку к уроку «{title}»."
+        else:
+            text = f"↩️ Наставник вернул домашку к уроку «{title}» на доработку."
+        if h["mentor_comment"]:
+            text += f"\nКомментарий: {html.escape(h['mentor_comment'])}"
+        text += platform.link_line("Открыть", f"/course/day/{day}")
+        await _send(bot, h["tg_user_id"], text)
+        await db.mark_homework_notified(h["student_id"], day, h["reviewed_at"])
 
 
 async def _send(bot: Bot, chat_id: int, text: str) -> None:

@@ -45,7 +45,7 @@ export default async function DevLoginPage() {
             kind="mentor"
             mentorId={m.id}
             redirectTo="/mentor"
-            label={`${m.fullName ?? "Без имени"} ${m.isAdmin ? "(админ)" : "(ментор)"}`}
+            label={`${m.fullName ?? "Без имени"} ${m.isAdmin ? "(админ)" : m.isDirector ? "(курс-директор)" : "(ментор)"}`}
           />
         ))}
         {mentors.length === 0 && <p className="text-sm text-white/50">Нет менторов — запустите pnpm db:seed</p>}

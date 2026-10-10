@@ -6,7 +6,18 @@ import { prisma } from "@/lib/prisma";
 export const SESSION_COOKIE = "wb_session";
 const MAX_AGE_SECONDS = 30 * 24 * 60 * 60; // 30 days
 
-export type Role = "student" | "mentor" | "admin";
+export type Role = "student" | "mentor" | "director" | "admin";
+
+/**
+ * Staff role from the mentors row flags. The flags are independent in the
+ * database (a course director may also run a group), but a session carries
+ * the highest one: mentor < director (edits live tasks, sees every group) < admin.
+ */
+export function staffRole(mentor: { isAdmin: boolean; isDirector: boolean }): Exclude<Role, "student"> {
+  if (mentor.isAdmin) return "admin";
+  if (mentor.isDirector) return "director";
+  return "mentor";
+}
 
 export type SessionPayload = {
   role: Role;
@@ -104,11 +115,11 @@ async function refreshFromDatabase(payload: SessionPayload): Promise<SessionPayl
   if (!payload.mentorId) return null;
   const mentor = await prisma.mentor.findUnique({
     where: { id: payload.mentorId },
-    select: { tgUserId: true, isAdmin: true }
+    select: { tgUserId: true, isAdmin: true, isDirector: true }
   });
   if (!mentor) return null;
   if (isTelegramId && String(mentor.tgUserId) !== payload.tgUserId) return null;
-  return { ...payload, role: mentor.isAdmin ? "admin" : "mentor" };
+  return { ...payload, role: staffRole(mentor) };
 }
 
 // Short-lived, studentId-bound tokens for /workbook/print — the offline

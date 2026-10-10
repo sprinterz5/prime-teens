@@ -699,6 +699,14 @@ PLATFORM_CSS = """
 .topbar .archived.on{ opacity:1; }
 .wb-locked canvas{ pointer-events:none; }
 
+/* Тетрадь одного дня (/course/day/N): навигация по всей тетради и пометка
+   «поток завершён» — в оболочке платформы; от шапки остаются только
+   всплывающие статусы «сохранено» / «нет связи» в правом верхнем углу. */
+.wb-day-mode .topbar{ position:fixed; top:0; left:auto; right:0; min-height:0 !important;
+  padding:0 !important; background:transparent; box-shadow:none; }
+.wb-day-mode .topbar .brand, .wb-day-mode .topbar #nav, .wb-day-mode .topbar .spacer,
+.wb-day-mode .topbar .counter, .wb-day-mode .topbar .archived{ display:none !important; }
+
 /* Печатный снимок (/workbook/print, см. app/workbook/print/route.ts): та же
    разметка, что и @media print ниже (WEB_CSS), но включается явным классом —
    так страница выглядит как печатная версия и в обычном браузере, не только
@@ -751,6 +759,16 @@ PLATFORM_JS = CANVAS_CORE_JS + """
   if(!studentId) return;
 
   if(WB.print) document.body.classList.add('wb-print-mode');
+
+  // Тетрадь одного дня (/course/day/N на платформе): страницы других дней
+  // убираем из документа до того, как ниже навешиваются поля и холсты, —
+  // по дням листает оболочка платформы, не эта страница.
+  if(WB.day){
+    document.body.classList.add('wb-day-mode');
+    document.querySelectorAll('.page').forEach(function(p){
+      if(p.getAttribute('data-day') !== String(WB.day)) p.parentNode.removeChild(p);
+    });
+  }
 
   // Read-only GET requests (entries/drawings/stream) carry the print token
   // along when we have one — see app/workbook/print/route.ts and

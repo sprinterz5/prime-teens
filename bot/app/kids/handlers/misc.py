@@ -57,6 +57,7 @@ async def help_cmd(message: Message) -> None:
     await message.answer(
         "<b>Что я умею</b>\n\n"
         "/start — регистрация по номеру\n"
+        "/login — войти на платформу: тетрадь по дням и домашка\n"
         "/schedule — расписание твоей группы\n"
         "/feedback — отзыв об уроке (наставник не видит, кто написал)\n"
         "/team — команда на хакатон\n"

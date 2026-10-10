@@ -32,6 +32,12 @@ class Settings:
     kids_bot_username: str = field(default_factory=lambda: _env("KIDS_BOT_USERNAME"))
     kids_bot_token: str = field(default_factory=lambda: _env("KIDS_BOT_TOKEN"))
 
+    # Адрес веб-платформы (тетрадь, домашка, кабинет ментора), без / в конце.
+    # Из него оба бота собирают ссылки входа (/login) и ссылки на задания дня.
+    # Пусто — /login отвечает, что платформа не настроена, ссылок в
+    # напоминаниях нет.
+    platform_url: str = field(default_factory=lambda: _env("PLATFORM_URL").rstrip("/"))
+
     # Синхронизация с Google-таблицей: бот САМ забирает данные по расписанию
     # (integrations/sheets_sync.gs, опубликованный как Web App). Пустой URL —
     # ни /sync_sheet, ни ночной автозабор ничего не делают, просто молчат.

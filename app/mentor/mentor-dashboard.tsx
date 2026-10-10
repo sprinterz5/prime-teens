@@ -49,6 +49,7 @@ function formatLockTime(iso: string): string {
 export function MentorDashboard() {
   const [groups, setGroups] = useState<Group[]>([]);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [canEditLive, setCanEditLive] = useState(false);
   const [groupId, setGroupId] = useState<number | null>(null);
   const [progress, setProgress] = useState<Progress | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -63,6 +64,7 @@ export function MentorDashboard() {
       .then((data) => {
         setGroups(data.groups);
         setIsAdmin(!!data.isAdmin);
+        setCanEditLive(!!data.canEditLive);
         if (selectFirst && data.groups.length > 0) setGroupId(data.groups[0].id);
       })
       .catch(() => setError("Не удалось загрузить группы"));
@@ -150,7 +152,22 @@ export function MentorDashboard() {
 
   return (
     <main className="min-h-screen bg-navy-950 px-4 py-8 text-white sm:px-8">
-      <h1 className="font-display text-2xl font-semibold">Прогресс учеников</h1>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h1 className="font-display text-2xl font-semibold">Прогресс учеников</h1>
+        <div className="flex gap-2">
+          <Link href="/mentor/live" className="rounded-lg bg-gold-500 px-3 py-2 text-xs font-semibold text-navy-950">
+            Live на уроке
+          </Link>
+          {canEditLive && (
+            <Link
+              href="/studio"
+              className="rounded-lg border border-white/15 px-3 py-2 text-xs font-semibold text-champagne hover:border-gold-400"
+            >
+              Студия заданий
+            </Link>
+          )}
+        </div>
+      </div>
 
       <div className="mt-4 flex flex-wrap items-center gap-3">
         <label className="text-sm text-muted" htmlFor="group-select">
@@ -169,6 +186,15 @@ export function MentorDashboard() {
             </option>
           ))}
         </select>
+
+        {selectedGroup && (
+          <Link
+            href={`/mentor/groups/${selectedGroup.id}/homework`}
+            className="rounded-lg border border-white/15 px-3 py-2 text-xs font-semibold text-champagne hover:border-gold-400"
+          >
+            Домашка
+          </Link>
+        )}
 
         {selectedGroup?.archivedAt && (
           <span className="rounded-full bg-white/10 px-3 py-1 text-xs font-semibold text-muted">Завершён</span>
