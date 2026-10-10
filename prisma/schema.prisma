@@ -130,6 +130,9 @@ model Student {
   phone       String?
   tgUserId    BigInt? @unique @map("tg_user_id")
   active      Boolean @default(true)
+  // Секрет ссылки-подписки на календарь (/api/calendar/<token>.ics) —
+  // календарные приложения не умеют cookie. Перевыпуск = старая ссылка мертва.
+  calendarToken String? @unique @map("calendar_token")
 
   group              Group             @relation(fields: [groupId], references: [id], onDelete: Cascade)
   kidFeedback        KidFeedback[]
@@ -143,6 +146,7 @@ model Student {
   homework           Homework[]
   loginCodes         LoginCode[]
   liveAnswers        LiveAnswer[]
+  deadlines          StudentDeadline[]
 
   @@unique([groupId, fullName])
   @@map("students")
@@ -479,4 +483,21 @@ model LiveAnswer {
 
   @@id([sessionId, questionIndex, studentId])
   @@map("live_answers")
+}
+
+// Личные дедлайны ученика в календаре платформы (олимпиады, летние
+// программы, конкурсы — то, что он сам находит в дни 6–7). Уроки и сроки
+// домашки в таблицу не пишутся: они считаются из программы курса (lib/calendar.ts).
+model StudentDeadline {
+  id        Int      @id @default(autoincrement())
+  studentId Int      @map("student_id")
+  title     String
+  dueAt     DateTime @map("due_at") @db.Timestamptz(6)
+  allDay    Boolean  @default(true) @map("all_day")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  student Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@index([studentId, dueAt], map: "idx_student_deadlines_student")
+  @@map("student_deadlines")
 }
