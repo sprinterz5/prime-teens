@@ -1,6 +1,6 @@
 from aiogram import Router
 
-from app.kids.handlers import feedback, hackathon, misc, registration
+from app.kids.handlers import feedback, hackathon, misc, platform, registration
 
 
 def build_router() -> Router:
@@ -13,4 +13,5 @@ def build_router() -> Router:
     root.include_router(hackathon.router)
     root.include_router(registration.router)
     root.include_router(misc.router)
+    root.include_router(platform.router)
     return root

@@ -1,7 +1,8 @@
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth/session";
 import { canReadStudent } from "@/lib/auth/authorize";
+import { loginPath } from "@/lib/auth/next-path";
 import { AppHeader } from "@/components/app/app-header";
 import { TelegramViewport } from "@/components/app/telegram-viewport";
 
@@ -15,14 +16,8 @@ export default async function MentorStudentWorkbookPage({
   const { studentId: studentIdRaw } = await params;
   const studentId = Number(studentIdRaw);
   const session = await getSession();
-
-  if (!session || session.role === "student") {
-    return (
-      <main className="flex min-h-screen flex-col items-center justify-center gap-4 bg-navy-950 px-6 text-center text-white">
-        <h1 className="font-display text-xl font-semibold">Только для менторов и админов</h1>
-      </main>
-    );
-  }
+  if (!session) redirect(loginPath(`/mentor/students/${studentIdRaw}`));
+  if (session.role === "student") redirect("/course");
 
   if (!Number.isInteger(studentId)) notFound();
   if (!(await canReadStudent(session, studentId))) {

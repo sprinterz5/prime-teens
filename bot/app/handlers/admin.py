@@ -121,6 +121,7 @@ async def admin_help(message: Message) -> None:
         "<code>/stats</code> — заполненность чек-листов\n"
         "<code>/broadcast текст</code> — всем менторам (не админам-организаторам)\n"
         "<code>/make_admin +77011234567</code> — выдать права администратора\n"
+        "<code>/make_director +77011234567</code> — роль курс-директора (задания live-режима)\n"
         "<code>/make_mentor +77011234567</code> — выдать роль ментора\n\n"
         "Ручной режим (на случай ошибки в экселе) — <code>/admin_manual</code>."
     )

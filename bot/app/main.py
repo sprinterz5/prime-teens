@@ -36,6 +36,7 @@ COMMANDS = [
     BotCommand(command="export", description="Выгрузить материалы для характеристик"),
     BotCommand(command="feedback", description="Отзывы учеников (без имён)"),
     BotCommand(command="schedule", description="Расписание группы"),
+    BotCommand(command="login", description="Войти на платформу (тетради, домашка)"),
     BotCommand(command="group", description="Состав группы"),
     BotCommand(command="stop", description="Прервать чек-лист"),
     BotCommand(command="help", description="Справка"),

@@ -22,13 +22,23 @@ export type WorkbookNotification = {
   updatedAt: string;
 };
 
+// Live mode (lib/live.ts) shares the same LISTEN connection on a second
+// channel, "live": every state change or new answer in a group's session.
+export type LiveNotification = {
+  kind: "state" | "answer";
+  sessionId: number;
+  groupId: number;
+};
+
 type Subscriber = (msg: WorkbookNotification) => void;
+type LiveSubscriber = (msg: LiveNotification) => void;
 
 type ListenerState = {
   client: Client;
   ready: Promise<void>;
   studentSubs: Map<number, Set<Subscriber>>;
   groupSubs: Map<number, Set<Subscriber>>;
+  liveSubs: Map<number, Set<LiveSubscriber>>;
 };
 
 const globalForRealtime = globalThis as unknown as { __wbListener?: ListenerState };
@@ -37,11 +47,13 @@ function createListener(): ListenerState {
   const client = new Client({ connectionString: process.env.DATABASE_URL });
   const studentSubs = new Map<number, Set<Subscriber>>();
   const groupSubs = new Map<number, Set<Subscriber>>();
+  const liveSubs = new Map<number, Set<LiveSubscriber>>();
 
   const ready: Promise<void> = client
     .connect()
     .then(async () => {
       await client.query("LISTEN workbook");
+      await client.query("LISTEN live");
     })
     .catch((err) => {
       console.error("[realtime] failed to connect/listen:", err);
@@ -49,6 +61,16 @@ function createListener(): ListenerState {
 
   client.on("notification", (msg) => {
     if (!msg.payload) return;
+    if (msg.channel === "live") {
+      let live: LiveNotification;
+      try {
+        live = JSON.parse(msg.payload);
+      } catch {
+        return;
+      }
+      liveSubs.get(live.groupId)?.forEach((fn) => fn(live));
+      return;
+    }
     let payload: WorkbookNotification;
     try {
       payload = JSON.parse(msg.payload);
@@ -63,17 +85,22 @@ function createListener(): ListenerState {
     console.error("[realtime] listener connection error:", err);
   });
 
-  return { client, ready, studentSubs, groupSubs };
+  return { client, ready, studentSubs, groupSubs, liveSubs };
 }
 
 function getListener(): ListenerState {
+  // A listener created before live mode existed (dev HMR) has no liveSubs — replace it.
+  if (globalForRealtime.__wbListener && !globalForRealtime.__wbListener.liveSubs) {
+    globalForRealtime.__wbListener.client.end().catch(() => {});
+    globalForRealtime.__wbListener = undefined;
+  }
   if (!globalForRealtime.__wbListener) {
     globalForRealtime.__wbListener = createListener();
   }
   return globalForRealtime.__wbListener;
 }
 
-function addSub(map: Map<number, Set<Subscriber>>, id: number, fn: Subscriber) {
+function addSub<T>(map: Map<number, Set<T>>, id: number, fn: T) {
   let set = map.get(id);
   if (!set) {
     set = new Set();
@@ -82,7 +109,7 @@ function addSub(map: Map<number, Set<Subscriber>>, id: number, fn: Subscriber) {
   set.add(fn);
 }
 
-function removeSub(map: Map<number, Set<Subscriber>>, id: number, fn: Subscriber) {
+function removeSub<T>(map: Map<number, Set<T>>, id: number, fn: T) {
   const set = map.get(id);
   if (!set) return;
   set.delete(fn);
@@ -125,4 +152,15 @@ export async function notifyGroupArchiveChanged(
   for (const studentId of studentIds) {
     await notifyWorkbook({ kind: "archive_changed", studentId, groupId, archived, updatedAt });
   }
+}
+
+export async function subscribeLiveGroup(groupId: number, fn: LiveSubscriber): Promise<() => void> {
+  const state = getListener();
+  await state.ready;
+  addSub(state.liveSubs, groupId, fn);
+  return () => removeSub(state.liveSubs, groupId, fn);
+}
+
+export async function notifyLive(payload: LiveNotification): Promise<void> {
+  await prisma.$executeRaw`SELECT pg_notify('live', ${JSON.stringify(payload)})`;
 }

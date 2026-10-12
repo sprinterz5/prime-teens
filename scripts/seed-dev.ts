@@ -14,6 +14,7 @@ const prisma = new PrismaClient();
 const FAKE_TG = {
   admin: BigInt(900000001),
   mentor: BigInt(900000002),
+  director: BigInt(900000003),
   student1: BigInt(900000011),
   student2: BigInt(900000012),
   student3: BigInt(900000013)
@@ -63,6 +64,53 @@ async function main() {
     }
   });
   console.log(`Ментор: ${mentor.fullName} (id=${mentor.id})`);
+
+  const director = await prisma.mentor.upsert({
+    where: { tgUserId: FAKE_TG.director },
+    update: {},
+    create: {
+      tgUserId: FAKE_TG.director,
+      fullName: "Тест Директоров (dev)",
+      isAdmin: false,
+      isMentor: false,
+      isDirector: true
+    }
+  });
+  console.log(`Курс-директор: ${director.fullName} (id=${director.id})`);
+
+  // One live-mode template with every question type, for /studio and /mentor/live.
+  const liveTitle = "День 1: разминка и дебаты (dev)";
+  if (!(await prisma.liveActivity.findFirst({ where: { title: liveTitle } }))) {
+    await prisma.liveActivity.create({
+      data: {
+        title: liveTitle,
+        dayIndex: 1,
+        createdBy: director.id,
+        questions: {
+          create: [
+            { position: 0, kind: "text", prompt: "Одно слово: что для тебя успех?", options: [], timeLimitSec: 45 },
+            {
+              position: 1,
+              kind: "choice",
+              prompt: "Школьная форма должна быть обязательной. Твоя сторона?",
+              options: ["За", "Против"],
+              timeLimitSec: 20
+            },
+            {
+              position: 2,
+              kind: "choice",
+              prompt: "Сколько минут у спикера в мини-дебатах?",
+              options: ["1", "2", "5"],
+              correctIndex: 0,
+              timeLimitSec: 20
+            },
+            { position: 3, kind: "scale", prompt: "Насколько убедительной была первая команда?", options: [], timeLimitSec: 30 }
+          ]
+        }
+      }
+    });
+    console.log(`Live-шаблон: ${liveTitle}`);
+  }
 
   await prisma.mentorGroup.upsert({
     where: { mentorId_groupId: { mentorId: mentor.id, groupId: group.id } },

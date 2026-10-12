@@ -28,7 +28,8 @@ class Registration(StatesGroup):
 
 
 def _role_badges(m) -> str:
-    badges = ("👑" if m["is_admin"] else "") + ("🎓" if m["is_mentor"] else "")
+    badges = (("👑" if m["is_admin"] else "") + ("🧭" if m.get("is_director") else "")
+              + ("🎓" if m["is_mentor"] else ""))
     return badges or "·"
 
 
@@ -313,6 +314,7 @@ async def got_contact(message: Message, state: FSMContext) -> None:
         message.from_user.id, phone, full_name,
         is_admin=admin_by_env or bootstrap or bool(entry and entry["is_admin"]),
         is_mentor=bool(entry["is_mentor"]) if entry is not None else True,
+        is_director=bool(entry and entry["is_director"]),
     )
 
     if bootstrap:
@@ -344,6 +346,13 @@ async def got_contact(message: Message, state: FSMContext) -> None:
             reply_markup=kb.main_menu(True, await is_mentor(message.from_user.id)),
         )
         return
+    elif entry and entry["is_director"] and not entry["is_mentor"]:
+        await message.answer(
+            f"Готово, {full_name}. Ты — <b>курс-директор</b>: задания для live-режима "
+            "и все группы — на платформе, кнопка «💻 Платформа» внизу.",
+            reply_markup=kb.main_menu(await is_admin(message.from_user.id), False),
+        )
+        return
     else:
         tail = "\n\nГруппа пока не назначена — напиши администратору."
 
@@ -372,7 +381,7 @@ async def make_admin(message: Message, command: CommandObject) -> None:
         return
     arg = (command.args or "").strip()
     if not arg:
-        mentors = await db.q("SELECT tg_user_id, phone, full_name, is_admin, is_mentor FROM mentors")
+        mentors = await db.q("SELECT tg_user_id, phone, full_name, is_admin, is_mentor, is_director FROM mentors")
         who = "\n".join(
             f"  {_role_badges(m)} {m['full_name']} · +{m['phone']} · "
             f"<code>{m['tg_user_id']}</code>" for m in mentors
@@ -380,7 +389,7 @@ async def make_admin(message: Message, command: CommandObject) -> None:
         await message.answer(
             "Формат: <code>/make_admin +77011234567</code> или "
             "<code>/make_admin 123456789</code> (Telegram ID)\n\n"
-            f"👑 админ · 🎓 ментор\n\nКто уже зарегистрирован:\n{who}"
+            f"👑 админ · 🧭 курс-директор · 🎓 ментор\n\nКто уже зарегистрирован:\n{who}"
         )
         return
 
@@ -405,7 +414,7 @@ async def make_mentor(message: Message, command: CommandObject) -> None:
         return
     arg = (command.args or "").strip()
     if not arg:
-        mentors = await db.q("SELECT tg_user_id, phone, full_name, is_admin, is_mentor FROM mentors")
+        mentors = await db.q("SELECT tg_user_id, phone, full_name, is_admin, is_mentor, is_director FROM mentors")
         who = "\n".join(
             f"  {_role_badges(m)} {m['full_name']} · +{m['phone']} · "
             f"<code>{m['tg_user_id']}</code>" for m in mentors
@@ -413,7 +422,7 @@ async def make_mentor(message: Message, command: CommandObject) -> None:
         await message.answer(
             "Формат: <code>/make_mentor +77011234567</code> или "
             "<code>/make_mentor 123456789</code> (Telegram ID)\n\n"
-            f"👑 админ · 🎓 ментор\n\nКто уже зарегистрирован:\n{who}"
+            f"👑 админ · 🧭 курс-директор · 🎓 ментор\n\nКто уже зарегистрирован:\n{who}"
         )
         return
 
@@ -427,6 +436,27 @@ async def make_mentor(message: Message, command: CommandObject) -> None:
 
     await db.set_mentor(target["tg_user_id"], True)
     await message.answer(f"🎓 {target['full_name']} теперь ментор.")
+
+
+@router.message(Command("make_director"))
+async def make_director(message: Message, command: CommandObject) -> None:
+    """Выдать роль курс-директора уже зарегистрированному пользователю. До
+    регистрации — через «⚙️ Админка → Люди и доступ» (по номеру)."""
+    if not await is_admin(message.from_user.id):
+        await message.answer("Команда только для администратора.")
+        return
+    arg = (command.args or "").strip()
+    target = await _find_mentor_by_arg(arg) if arg else None
+    if target is None:
+        await message.answer(
+            "Формат: <code>/make_director +77011234567</code> или Telegram ID. "
+            "Человек должен уже быть в боте; если ещё нет — «⚙️ Админка → "
+            "Люди и доступ → Добавить курс-директора» по номеру."
+        )
+        return
+    await db.set_director(target["tg_user_id"], True)
+    await message.answer(f"🧭 {target['full_name']} теперь курс-директор — "
+                         "задания live-режима правятся на платформе (/login).")
 
 
 @router.message(F.text == "👥 Моя группа")
@@ -561,6 +591,7 @@ async def help_cmd(message: Message) -> None:
         "/final — финальный опрос перед характеристиками\n"
         "/export — выгрузить материалы для характеристик\n"
         "/feedback — отзывы учеников по своим группам (из детского бота, без имён)\n"
+        "/login — войти на платформу: прогресс тетрадей и проверка домашки\n"
         "/whoami — мой Telegram ID\n\n"
         "На вопросы чек-листа можно отвечать <b>голосовым</b> — я расшифрую сам."
     )
@@ -576,7 +607,7 @@ async def help_cmd(message: Message) -> None:
             "/invite — меню ссылок: ментору (одноразовый пропуск), ученикам, админу\n"
             "/groups (или /groups all) — активные группы (или вообще все)\n"
             "/students, /today, /overview — сводки по курсу\n"
-            "/make_admin, /make_mentor +номер — выдать роль\n"
+            "/make_admin, /make_director, /make_mentor +номер — выдать роль\n"
             "/broadcast текст — сообщение всем менторам\n"
             "/admin_manual — ручной режим (если в экселе ошибка)"
         )
