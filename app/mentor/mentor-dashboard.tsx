@@ -23,6 +23,8 @@ type StudentProgress = {
   lastActivity: string | null;
 };
 
+type Risk = { recentDays: number[]; students: { id: number; name: string; reasons: string[] }[] };
+
 type Progress = {
   days: number[];
   totalsByDay: Record<string, number>;
@@ -52,6 +54,7 @@ export function MentorDashboard() {
   const [canEditLive, setCanEditLive] = useState(false);
   const [groupId, setGroupId] = useState<number | null>(null);
   const [progress, setProgress] = useState<Progress | null>(null);
+  const [risk, setRisk] = useState<Risk | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [confirming, setConfirming] = useState<"archive" | "unarchive" | null>(null);
   const [archiveBusy, setArchiveBusy] = useState(false);
@@ -84,8 +87,13 @@ export function MentorDashboard() {
   useEffect(() => {
     if (groupId === null) return;
     setProgress(null);
+    setRisk(null);
     setConfirming(null);
     loadProgress(groupId);
+    fetch(`/api/mentor/groups/${groupId}/risk`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then(setRisk)
+      .catch(() => {});
 
     esRef.current?.close();
     const es = new EventSource(`/api/mentor/groups/${groupId}/stream`);
@@ -251,6 +259,23 @@ export function MentorDashboard() {
       )}
 
       {error && <p className="mt-4 text-sm text-red-400">{error}</p>}
+
+      {risk && risk.students.length > 0 && !selectedGroup?.archivedAt && (
+        <section className="mt-6 max-w-3xl rounded-xl border border-orange-300/30 bg-navy-900 p-4">
+          <h2 className="font-display text-sm font-semibold text-orange-200">К кому подойти</h2>
+          <p className="mt-1 text-xs text-muted">По последним занятиям (дни {risk.recentDays.join(", ")}). Видите только вы.</p>
+          <ul className="mt-3 space-y-2 text-sm">
+            {risk.students.map((s) => (
+              <li key={s.id}>
+                <Link href={`/mentor/students/${s.id}`} className="font-semibold underline hover:text-gold-400">
+                  {s.name}
+                </Link>
+                <span className="text-muted"> — {s.reasons.join("; ")}</span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       {progress && (
         <div className="mt-6 overflow-x-auto">
