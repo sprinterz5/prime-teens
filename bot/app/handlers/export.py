@@ -1,32 +1,58 @@
 """Выгрузка материалов для характеристик — основной способ забрать данные из бота."""
 from __future__ import annotations
 
+import datetime as dt
 import logging
 
 from aiogram import F, Router
 from aiogram.filters import Command
-from aiogram.types import CallbackQuery, FSInputFile, Message
+from aiogram.types import CallbackQuery, FSInputFile, InlineKeyboardButton, InlineKeyboardMarkup, Message
 
-from app import db, dossier, keyboards as kb
+from app import db, dossier
 from app.config import settings
+from app.handlers.registration import is_admin
 
 log = logging.getLogger(__name__)
 router = Router(name="export")
 
 
+async def _exportable_groups(tg_user_id: int) -> list | None:
+    """Группы, материалы которых можно выгрузить, — в том числе завершённые:
+    характеристики пишут после курса, а группа к тому времени уже закрыта
+    (db.groups / mentor_groups по умолчанию их прячут). Ментор — свои группы,
+    админ и курс-директор — все. None — человек не зарегистрирован."""
+    mentor = await db.mentor_by_tg(tg_user_id)
+    if not mentor:
+        return None
+    if await is_admin(tg_user_id) or mentor["is_director"]:
+        return await db.groups(active_only=False)
+    return await db.mentor_groups(mentor["id"], active_only=False)
+
+
+async def _picker(groups: list) -> InlineKeyboardMarkup:
+    """Сначала идущие группы, потом завершённые — свежие сверху."""
+    active = {g["id"] for g in await db.groups()}
+    current = [g for g in groups if g["id"] in active]
+    finished = sorted((g for g in groups if g["id"] not in active),
+                      key=lambda g: g["start_date"] or dt.date.min, reverse=True)
+    rows = [[InlineKeyboardButton(text=g["name"], callback_data=f"ex:group:{g['id']}")] for g in current]
+    rows += [[InlineKeyboardButton(text=f"🗂 {g['name']} · завершена", callback_data=f"ex:group:{g['id']}")]
+             for g in finished]
+    return InlineKeyboardMarkup(inline_keyboard=rows)
+
+
 @router.message(F.text == "📤 Материалы")
 @router.message(Command("export"))
 async def entry(message: Message) -> None:
-    mentor = await db.mentor_by_tg(message.from_user.id)
-    if not mentor:
+    groups = await _exportable_groups(message.from_user.id)
+    if groups is None:
         await message.answer("Сначала зарегистрируйся: /start")
         return
-    groups = await db.mentor_groups(mentor["id"])
     if not groups:
         await message.answer("К тебе не привязана группа.")
         return
     if len(groups) > 1:
-        await message.answer("Какая группа?", reply_markup=kb.pick_group(groups, "ex:group"))
+        await message.answer("Какая группа?", reply_markup=await _picker(groups))
         return
     await _export(message, groups[0]["id"])
 
@@ -34,6 +60,10 @@ async def entry(message: Message) -> None:
 @router.callback_query(F.data.startswith("ex:group:"))
 async def pick_group(call: CallbackQuery) -> None:
     gid = int(call.data.split(":")[2])
+    groups = await _exportable_groups(call.from_user.id) or []
+    if gid not in {g["id"] for g in groups}:
+        await call.answer("Нет доступа к этой группе", show_alert=True)
+        return
     await call.answer()
     try:
         await call.message.edit_reply_markup(reply_markup=None)
